@@ -137,13 +137,13 @@ export function ScrollSequence() {
     // re-render as images stream in
     const interval = window.setInterval(render, 120);
 
-    const stagePauses = STAGES.map((s) => s.frame / (TOTAL_FRAMES - 1));
+    const stageFractions = STAGES.map((s) => s.frame / (TOTAL_FRAMES - 1));
 
     const tl = gsap.timeline({
       scrollTrigger: {
         trigger: section,
         start: "top top",
-        end: () => `+=${window.innerHeight * 6}`,
+        end: () => `+=${window.innerHeight * 5}`,
         scrub: 0.6,
         pin: true,
         anticipatePin: 1,
@@ -151,7 +151,7 @@ export function ScrollSequence() {
           const p = self.progress;
           let nearest = 0;
           let best = Infinity;
-          stagePauses.forEach((sp, i) => {
+          stageFractions.forEach((sp, i) => {
             const d = Math.abs(p - sp);
             if (d < best) {
               best = d;
@@ -163,21 +163,10 @@ export function ScrollSequence() {
       },
     });
 
-    let prev = 0;
-    stagePauses.forEach((sp) => {
-      tl.to(stateRef.current, {
-        frame: sp * (TOTAL_FRAMES - 1),
-        ease: "none",
-        duration: Math.max(0.0001, sp - prev),
-        onUpdate: render,
-      });
-      tl.to({}, { duration: 0.22 });
-      prev = sp;
-    });
     tl.to(stateRef.current, {
       frame: TOTAL_FRAMES - 1,
       ease: "none",
-      duration: Math.max(0.0001, 1 - prev),
+      duration: 1,
       onUpdate: render,
     });
 
