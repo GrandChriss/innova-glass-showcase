@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ScrollSequence } from "@/components/ScrollSequence";
-import firstFrame from "@/assets/sequence/frame-001.webp.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -23,14 +22,14 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
-  // 0 = viršus (blur ir tekstai matomi), 1 = pilnai atidengtas kadras
-  const [p, setP] = useState(0);
+  // Nav stiliaus progresas — grubiai sekamas pagal scrollY (per pirmus ~120vh).
+  const [navP, setNavP] = useState(0);
 
   useEffect(() => {
     const onScroll = () => {
       const h = window.innerHeight;
       const y = Math.min(Math.max(window.scrollY, 0), h);
-      setP(y / h);
+      setNavP(y / h);
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -41,12 +40,8 @@ function Home() {
     };
   }, []);
 
-  const blurPx = (1 - p) * 22.4; // 22.4px -> 0px (−20%)
-  const contentOpacity = Math.max(0, 1 - p * 1.4);
-  const contentTranslate = -p * 160; // px, kyla į viršų
-  // Nav: pradžioje mažiau permatomas, vėliau liquid glass
-  const navBg = 0.72 - p * 0.42; // 0.72 -> 0.30
-  const navBlur = 14 + p * 22; // 14 -> 36
+  const navBg = 0.72 - navP * 0.42;
+  const navBlur = 14 + navP * 22;
 
   return (
     <main className="relative">
@@ -56,12 +51,15 @@ function Home() {
           className="flex items-center justify-between rounded-full px-4 py-2.5 sm:px-6 sm:py-3 transition-[background-color,backdrop-filter] duration-300"
           style={{
             backgroundColor: `rgba(255,255,255,${navBg})`,
-            backdropFilter: `blur(${navBlur}px) saturate(${140 + p * 40}%)`,
+            backdropFilter: `blur(${navBlur}px) saturate(${140 + navP * 40}%)`,
             border: "1px solid rgba(255,255,255,0.6)",
             boxShadow: "var(--shadow-glass)",
           }}
         >
-          <a href="#top" className="flex items-center gap-2 text-sm font-extrabold tracking-tight sm:text-base">
+          <a
+            href="#top"
+            className="flex items-center gap-2 text-sm font-extrabold tracking-tight sm:text-base"
+          >
             <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[var(--sonoma-deep)] text-[var(--cream-soft)] text-[11px] font-black">
               IB
             </span>
@@ -91,100 +89,102 @@ function Home() {
         </nav>
       </header>
 
-      {/* HERO — 2x viewport tall, sticky vidus laiko kadrą kol tekstas išnyksta */}
-      <section
-        id="top"
-        className="relative h-[200vh] w-full"
-        aria-label="Pradžios sekcija"
-      >
-        <div className="sticky top-0 h-screen w-full overflow-hidden">
-          {/* Fono kadras (pirmas ScrollSequence kadras) */}
-          <div
-            aria-hidden
-            className="absolute inset-0 will-change-[filter,transform]"
-            style={{
-              backgroundImage: `url(${firstFrame.url})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              filter: `blur(${blurPx}px) saturate(105%)`,
-              transform: `scale(${1.08 - p * 0.08})`,
-            }}
-          />
-          {/* Šiltas cream overlay, kad būtų subtiliai paslėpta */}
-          <div
-            aria-hidden
-            className="absolute inset-0 transition-opacity duration-100"
-            style={{
-              background:
-                "linear-gradient(180deg, rgba(246,236,217,0.55) 0%, rgba(246,236,217,0.25) 45%, rgba(246,236,217,0.1) 100%)",
-              opacity: 0.85 - p * 0.7,
-            }}
-          />
-
-          {/* Hero turinys — kyla į viršų ir nyksta */}
-          <div
-            className="relative z-10 flex h-full w-full items-center justify-center px-4"
-            style={{
-              opacity: contentOpacity,
-              transform: `translate3d(0, ${contentTranslate}px, 0)`,
-              willChange: "transform, opacity",
-            }}
-          >
-            <div className="mx-auto flex max-w-5xl flex-col items-center text-center">
-              <span className="glass mb-6 rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--sonoma-deep)] sm:text-xs">
-                Lietuviški baldai • 2008
-              </span>
-
-              <h1 className="font-extrabold leading-[0.85] tracking-tight text-[var(--foreground)] [text-shadow:0_2px_30px_rgba(255,255,255,0.6)]">
-                <span className="block text-[clamp(3rem,14vw,10rem)]">INNOVA</span>
-                <span
-                  className="block text-[clamp(2.5rem,12vw,8.5rem)] italic"
+      {/* HERO + Canvas sequence — viena pinuota sekcija, be perėjimo */}
+      <div id="top" />
+      <div id="sequence">
+        <ScrollSequence
+          heroOverlay={(p) => {
+            // p: 0 pradžioje (blur + tekstai), 1 kai matomas grynas kadras.
+            const blurPx = (1 - p) * 22.4;
+            const contentOpacity = Math.max(0, 1 - p * 1.4);
+            const contentTranslate = -p * 160;
+            return (
+              <div className="relative h-full w-full">
+                {/* Blur perdanga virš kadro */}
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0"
                   style={{
-                    background: "var(--gradient-sonoma)",
-                    WebkitBackgroundClip: "text",
-                    backgroundClip: "text",
-                    color: "transparent",
+                    backdropFilter: `blur(${blurPx}px) saturate(105%)`,
+                    WebkitBackdropFilter: `blur(${blurPx}px) saturate(105%)`,
+                  }}
+                />
+                {/* Šiltas cream overlay */}
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0"
+                  style={{
+                    background:
+                      "linear-gradient(180deg, rgba(246,236,217,0.55) 0%, rgba(246,236,217,0.25) 45%, rgba(246,236,217,0.1) 100%)",
+                    opacity: 0.85 - p * 0.7,
+                  }}
+                />
+
+                {/* Hero turinys */}
+                <div
+                  className="relative z-10 flex h-full w-full items-center justify-center px-4"
+                  style={{
+                    opacity: contentOpacity,
+                    transform: `translate3d(0, ${contentTranslate}px, 0)`,
+                    willChange: "transform, opacity",
+                    pointerEvents: contentOpacity < 0.05 ? "none" : "auto",
                   }}
                 >
-                  BALDAI
-                </span>
-              </h1>
+                  <div className="mx-auto flex max-w-5xl flex-col items-center text-center">
+                    <span className="glass mb-6 rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--sonoma-deep)] sm:text-xs">
+                      Lietuviški baldai • 2008
+                    </span>
 
-              <p className="mt-8 max-w-xl text-base text-[var(--foreground)]/85 sm:text-lg [text-shadow:0_1px_18px_rgba(255,255,255,0.7)]">
-                Sonoma ąžuolas, kreminiai paviršiai ir pažangūs vokiški mechanizmai —
-                baldai, kurie tarnauja kasdien ir veikia kaip tobula mašina.
-              </p>
+                    <h1 className="font-extrabold leading-[0.85] tracking-tight text-[var(--foreground)] [text-shadow:0_2px_30px_rgba(255,255,255,0.6)]">
+                      <span className="block text-[clamp(3rem,14vw,10rem)]">
+                        INNOVA
+                      </span>
+                      <span
+                        className="block text-[clamp(2.5rem,12vw,8.5rem)] italic"
+                        style={{
+                          background: "var(--gradient-sonoma)",
+                          WebkitBackgroundClip: "text",
+                          backgroundClip: "text",
+                          color: "transparent",
+                        }}
+                      >
+                        BALDAI
+                      </span>
+                    </h1>
 
-              <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row">
-                <a
-                  href="#sequence"
-                  className="rounded-full bg-[var(--sonoma-deep)] px-8 py-4 text-sm font-semibold text-[var(--cream-soft)] shadow-[var(--shadow-soft)] transition-transform hover:-translate-y-0.5 sm:text-base"
+                    <p className="mt-8 max-w-xl text-base text-[var(--foreground)]/85 sm:text-lg [text-shadow:0_1px_18px_rgba(255,255,255,0.7)]">
+                      Sonoma ąžuolas, kreminiai paviršiai ir pažangūs vokiški
+                      mechanizmai — baldai, kurie tarnauja kasdien ir veikia
+                      kaip tobula mašina.
+                    </p>
+
+                    <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row">
+                      <a
+                        href="#sequence"
+                        className="rounded-full bg-[var(--sonoma-deep)] px-8 py-4 text-sm font-semibold text-[var(--cream-soft)] shadow-[var(--shadow-soft)] transition-transform hover:-translate-y-0.5 sm:text-base"
+                      >
+                        Pažiūrėti, kaip veikia →
+                      </a>
+                      <a
+                        href="#contact"
+                        className="glass rounded-full px-8 py-4 text-sm font-semibold sm:text-base"
+                      >
+                        Užsisakyti matavimus
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-medium uppercase tracking-[0.3em] text-[var(--foreground)]/70"
+                  style={{ opacity: contentOpacity }}
                 >
-                  Pažiūrėti, kaip veikia →
-                </a>
-                <a
-                  href="#contact"
-                  className="glass rounded-full px-8 py-4 text-sm font-semibold sm:text-base"
-                >
-                  Užsisakyti matavimus
-                </a>
+                  Skrolinkite žemyn
+                </div>
               </div>
-            </div>
-          </div>
-
-          {/* Scroll cue */}
-          <div
-            className="absolute bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-medium uppercase tracking-[0.3em] text-[var(--foreground)]/70"
-            style={{ opacity: contentOpacity }}
-          >
-            Skrolinkite žemyn
-          </div>
-        </div>
-      </section>
-
-      {/* Canvas scroll sequence */}
-      <div id="sequence">
-        <ScrollSequence />
+            );
+          }}
+        />
       </div>
 
       {/* Features grid */}
@@ -200,19 +200,42 @@ function Home() {
           </div>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {[
-              { t: "Vokiški mechanizmai", d: "Blum, Hettich ir Aventos sistemos — 25 metų garantija mechanizmams." },
-              { t: "Sonoma ąžuolas", d: "Natūralios tekstūros laminatas, atsparus drėgmei ir įbrėžimams." },
-              { t: "3D vizualizacija", d: "Pamatysite savo baldus prieš gamybą — be staigmenų ir nesusipratimų." },
-              { t: "Gamyba per 14 d.", d: "Sava gamykla Lietuvoje, trumpiausi terminai rinkoje." },
-              { t: "Tylus uždarymas", d: "Visi stalčiai ir durelės su soft-close standartiškai." },
-              { t: "Modulinis dizainas", d: "Pritaikoma bet kuriai erdvei — nuo 4 iki 40 kv. m." },
+              {
+                t: "Vokiški mechanizmai",
+                d: "Blum, Hettich ir Aventos sistemos — 25 metų garantija mechanizmams.",
+              },
+              {
+                t: "Sonoma ąžuolas",
+                d: "Natūralios tekstūros laminatas, atsparus drėgmei ir įbrėžimams.",
+              },
+              {
+                t: "3D vizualizacija",
+                d: "Pamatysite savo baldus prieš gamybą — be staigmenų ir nesusipratimų.",
+              },
+              {
+                t: "Gamyba per 14 d.",
+                d: "Sava gamykla Lietuvoje, trumpiausi terminai rinkoje.",
+              },
+              {
+                t: "Tylus uždarymas",
+                d: "Visi stalčiai ir durelės su soft-close standartiškai.",
+              },
+              {
+                t: "Modulinis dizainas",
+                d: "Pritaikoma bet kuriai erdvei — nuo 4 iki 40 kv. m.",
+              },
             ].map((f) => (
-              <div key={f.t} className="glass rounded-3xl p-6 transition-transform hover:-translate-y-1">
+              <div
+                key={f.t}
+                className="glass rounded-3xl p-6 transition-transform hover:-translate-y-1"
+              >
                 <div className="mb-4 grid h-10 w-10 place-items-center rounded-2xl bg-[var(--sonoma)]/40 text-[var(--sonoma-deep)] font-black">
                   ✦
                 </div>
                 <h3 className="text-lg font-bold">{f.t}</h3>
-                <p className="mt-2 text-sm text-[var(--muted-foreground)]">{f.d}</p>
+                <p className="mt-2 text-sm text-[var(--muted-foreground)]">
+                  {f.d}
+                </p>
               </div>
             ))}
           </div>
@@ -268,7 +291,9 @@ function Home() {
           </div>
 
           <footer className="mt-10 flex flex-col items-center justify-between gap-3 text-xs text-[var(--muted-foreground)] sm:flex-row">
-            <span>© {new Date().getFullYear()} INNOVA BALDAI. Visos teisės saugomos.</span>
+            <span>
+              © {new Date().getFullYear()} INNOVA BALDAI. Visos teisės saugomos.
+            </span>
             <span>Vilnius • Kaunas • Klaipėda</span>
           </footer>
         </div>
