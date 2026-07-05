@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -13,6 +13,12 @@ const FRAME_URLS: string[] = Object.keys(frameModules)
   .sort()
   .map((k) => frameModules[k].url);
 const TOTAL_FRAMES = FRAME_URLS.length;
+
+// Hero fazė užima šią bendro pinuoto scroll dalį — jos metu kadras stovi ties 0.
+const HERO_FRACTION = 1 / 6; // 1 iš 6 viewporto aukščių
+const HERO_SCROLL_VH = 1;
+const SEQUENCE_SCROLL_VH = 5;
+const TOTAL_SCROLL_VH = HERO_SCROLL_VH + SEQUENCE_SCROLL_VH;
 
 const STAGES = [
   {
@@ -50,14 +56,9 @@ function drawImage(
   const dpr = window.devicePixelRatio || 1;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, w, h);
-
-  // soft cream background wash
   ctx.fillStyle = "#f6ecd9";
   ctx.fillRect(0, 0, w, h);
-
   if (!img.complete || !img.naturalWidth) return;
-
-  // cover-fit
   const ir = img.naturalWidth / img.naturalHeight;
   const cr = w / h;
   let dw = w;
@@ -74,15 +75,21 @@ function drawImage(
   ctx.drawImage(img, dx, dy, dw, dh);
 }
 
-export function ScrollSequence() {
+interface Props {
+  /** Overlay virš kadrų. `heroP` — 0 pradžioje, 1 kai hero fazė baigta. */
+  heroOverlay?: (heroP: number) => ReactNode;
+}
+
+export function ScrollSequence({ heroOverlay }: Props) {
   const sectionRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imagesRef = useRef<HTMLImageElement[]>([]);
   const stateRef = useRef({ frame: 0 });
   const [activeStage, setActiveStage] = useState(0);
+  const [heroP, setHeroP] = useState(0);
+  const [seqP, setSeqP] = useState(0); // 0 hero fazėje, > 0 kai prasideda sequence
   const [loaded, setLoaded] = useState(0);
 
-  // Preload all frames
   useEffect(() => {
     let cancelled = false;
     let done = 0;
@@ -133,52 +140,54 @@ export function ScrollSequence() {
     };
     resize();
     window.addEventListener("resize", resize);
-
-    // re-render as images stream in
     const interval = window.setInterval(render, 120);
 
     const stageFractions = STAGES.map((s) => s.frame / (TOTAL_FRAMES - 1));
 
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: section,
-        start: "top top",
-        end: () => `+=${window.innerHeight * 5}`,
-        scrub: 0.6,
-        pin: true,
-        anticipatePin: 1,
-        onUpdate: (self) => {
-          const p = self.progress;
+    const st = ScrollTrigger.create({
+      trigger: section,
+      start: "top top",
+      end: () => `+=${window.innerHeight * TOTAL_SCROLL_VH}`,
+      scrub: 0.6,
+      pin: true,
+      anticipatePin: 1,
+      onUpdate: (self) => {
+        const p = self.progress;
+        if (p <= HERO_FRACTION) {
+          const hp = p / HERO_FRACTION; // 0 → 1
+          setHeroP(hp);
+          setSeqP(0);
+          stateRef.current.frame = 0;
+          render();
+        } else {
+          setHeroP(1);
+          const sp = (p - HERO_FRACTION) / (1 - HERO_FRACTION);
+          setSeqP(sp);
+          stateRef.current.frame = sp * (TOTAL_FRAMES - 1);
+          render();
           let nearest = 0;
           let best = Infinity;
-          stageFractions.forEach((sp, i) => {
-            const d = Math.abs(p - sp);
+          stageFractions.forEach((sf, i) => {
+            const d = Math.abs(sp - sf);
             if (d < best) {
               best = d;
               nearest = i;
             }
           });
           setActiveStage(nearest);
-        },
+        }
       },
-    });
-
-    tl.to(stateRef.current, {
-      frame: TOTAL_FRAMES - 1,
-      ease: "none",
-      duration: 1,
-      onUpdate: render,
     });
 
     return () => {
       window.removeEventListener("resize", resize);
       window.clearInterval(interval);
-      tl.scrollTrigger?.kill();
-      tl.kill();
+      st.kill();
     };
   }, []);
 
   const progress = Math.round((loaded / TOTAL_FRAMES) * 100);
+  const showStageUI = seqP > 0.01;
 
   return (
     <section
@@ -188,17 +197,28 @@ export function ScrollSequence() {
     >
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
 
-      {/* Loader */}
+      {/* Hero overlay virš to paties kadro — jokio fizinio perėjimo */}
+      {heroOverlay && (
+        <div className="pointer-events-none absolute inset-0 z-30">
+          <div className="pointer-events-auto h-full w-full">
+            {heroOverlay(heroP)}
+          </div>
+        </div>
+      )}
+
       {loaded < TOTAL_FRAMES && (
-        <div className="pointer-events-none absolute inset-0 z-30 grid place-items-center">
+        <div className="pointer-events-none absolute inset-0 z-40 grid place-items-center">
           <div className="glass rounded-full px-4 py-2 text-xs font-semibold text-[var(--sonoma-deep)]">
             Kraunama… {progress}%
           </div>
         </div>
       )}
 
-      {/* Stage indicator pills */}
-      <div className="pointer-events-none absolute left-1/2 top-6 z-20 -translate-x-1/2">
+      {/* Stage pills — matomi tik sequence fazėje */}
+      <div
+        className="pointer-events-none absolute left-1/2 top-6 z-20 -translate-x-1/2 transition-opacity duration-300"
+        style={{ opacity: showStageUI ? 1 : 0 }}
+      >
         <div className="glass flex items-center gap-1.5 rounded-full px-2 py-2 sm:gap-2 sm:px-3">
           {STAGES.map((s, i) => (
             <div
@@ -215,10 +235,9 @@ export function ScrollSequence() {
         </div>
       </div>
 
-      {/* Sliding glass info cards */}
       <div className="pointer-events-none absolute inset-0 z-10 flex items-end justify-end p-4 sm:items-center sm:p-10">
         {STAGES.map((s, i) => {
-          const active = i === activeStage;
+          const active = showStageUI && i === activeStage;
           return (
             <article
               key={s.title}
@@ -245,7 +264,10 @@ export function ScrollSequence() {
         })}
       </div>
 
-      <div className="pointer-events-none absolute bottom-4 left-4 z-20">
+      <div
+        className="pointer-events-none absolute bottom-4 left-4 z-20 transition-opacity duration-300"
+        style={{ opacity: showStageUI ? 1 : 0 }}
+      >
         <div className="glass rounded-full px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider text-[var(--muted-foreground)] sm:text-xs">
           Skrolinkite ↓
         </div>
