@@ -91,10 +91,10 @@ function Home() {
         </nav>
       </header>
 
-      {/* HERO — sticky, kad kadras liktų kol tekstas išnyksta */}
+      {/* HERO — 2x viewport tall, sticky vidus laiko kadrą kol tekstas išnyksta */}
       <section
         id="top"
-        className="relative h-screen w-full"
+        className="relative h-[200vh] w-full"
         aria-label="Pradžios sekcija"
       >
         <div className="sticky top-0 h-screen w-full overflow-hidden">
