@@ -41,9 +41,9 @@ function Home() {
     };
   }, []);
 
-  const blurPx = (1 - p) * 28; // 28px -> 0px
+  const blurPx = (1 - p) * 22.4; // 22.4px -> 0px (−20%)
   const contentOpacity = Math.max(0, 1 - p * 1.4);
-  const contentTranslate = -p * 120; // px, kyla į viršų
+  const contentTranslate = -p * 160; // px, kyla į viršų
   // Nav: pradžioje mažiau permatomas, vėliau liquid glass
   const navBg = 0.72 - p * 0.42; // 0.72 -> 0.30
   const navBlur = 14 + p * 22; // 14 -> 36
@@ -91,10 +91,10 @@ function Home() {
         </nav>
       </header>
 
-      {/* HERO — sticky, kad kadras liktų kol tekstas išnyksta */}
+      {/* HERO — 2x viewport tall, sticky vidus laiko kadrą kol tekstas išnyksta */}
       <section
         id="top"
-        className="relative h-screen w-full"
+        className="relative h-[200vh] w-full"
         aria-label="Pradžios sekcija"
       >
         <div className="sticky top-0 h-screen w-full overflow-hidden">
