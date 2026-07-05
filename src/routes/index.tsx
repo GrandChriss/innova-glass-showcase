@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { ScrollSequence } from "@/components/ScrollSequence";
+import firstFrame from "@/assets/sequence/frame-001.webp.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -21,11 +23,44 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
+  // 0 = viršus (blur ir tekstai matomi), 1 = pilnai atidengtas kadras
+  const [p, setP] = useState(0);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const h = window.innerHeight;
+      const y = Math.min(Math.max(window.scrollY, 0), h);
+      setP(y / h);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, []);
+
+  const blurPx = (1 - p) * 28; // 28px -> 0px
+  const contentOpacity = Math.max(0, 1 - p * 1.4);
+  const contentTranslate = -p * 120; // px, kyla į viršų
+  // Nav: pradžioje mažiau permatomas, vėliau liquid glass
+  const navBg = 0.72 - p * 0.42; // 0.72 -> 0.30
+  const navBlur = 14 + p * 22; // 14 -> 36
+
   return (
     <main className="relative">
       {/* Floating glass nav */}
       <header className="fixed left-1/2 top-4 z-50 w-[min(94%,960px)] -translate-x-1/2">
-        <nav className="glass flex items-center justify-between rounded-full px-4 py-2.5 sm:px-6 sm:py-3">
+        <nav
+          className="flex items-center justify-between rounded-full px-4 py-2.5 sm:px-6 sm:py-3 transition-[background-color,backdrop-filter] duration-300"
+          style={{
+            backgroundColor: `rgba(255,255,255,${navBg})`,
+            backdropFilter: `blur(${navBlur}px) saturate(${140 + p * 40}%)`,
+            border: "1px solid rgba(255,255,255,0.6)",
+            boxShadow: "var(--shadow-glass)",
+          }}
+        >
           <a href="#top" className="flex items-center gap-2 text-sm font-extrabold tracking-tight sm:text-base">
             <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[var(--sonoma-deep)] text-[var(--cream-soft)] text-[11px] font-black">
               IB
@@ -56,68 +91,94 @@ function Home() {
         </nav>
       </header>
 
-      {/* HERO */}
+      {/* HERO — sticky, kad kadras liktų kol tekstas išnyksta */}
       <section
         id="top"
-        className="relative flex min-h-screen w-full items-center justify-center overflow-hidden px-4"
+        className="relative h-screen w-full"
+        aria-label="Pradžios sekcija"
       >
-        {/* Decorative blurred blobs */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -left-32 top-20 h-[420px] w-[420px] rounded-full opacity-70 blur-3xl"
-          style={{ background: "radial-gradient(circle, oklch(0.88 0.06 75 / 0.7), transparent 70%)" }}
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -right-24 bottom-10 h-[480px] w-[480px] rounded-full opacity-60 blur-3xl"
-          style={{ background: "radial-gradient(circle, oklch(0.92 0.04 90 / 0.7), transparent 70%)" }}
-        />
+        <div className="sticky top-0 h-screen w-full overflow-hidden">
+          {/* Fono kadras (pirmas ScrollSequence kadras) */}
+          <div
+            aria-hidden
+            className="absolute inset-0 will-change-[filter,transform]"
+            style={{
+              backgroundImage: `url(${firstFrame.url})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              filter: `blur(${blurPx}px) saturate(105%)`,
+              transform: `scale(${1.08 - p * 0.08})`,
+            }}
+          />
+          {/* Šiltas cream overlay, kad būtų subtiliai paslėpta */}
+          <div
+            aria-hidden
+            className="absolute inset-0 transition-opacity duration-100"
+            style={{
+              background:
+                "linear-gradient(180deg, rgba(246,236,217,0.55) 0%, rgba(246,236,217,0.25) 45%, rgba(246,236,217,0.1) 100%)",
+              opacity: 0.85 - p * 0.7,
+            }}
+          />
 
-        <div className="relative z-10 mx-auto flex max-w-5xl flex-col items-center text-center">
-          <span className="glass mb-6 rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--sonoma-deep)] sm:text-xs">
-            Lietuviški baldai • 2008
-          </span>
+          {/* Hero turinys — kyla į viršų ir nyksta */}
+          <div
+            className="relative z-10 flex h-full w-full items-center justify-center px-4"
+            style={{
+              opacity: contentOpacity,
+              transform: `translate3d(0, ${contentTranslate}px, 0)`,
+              willChange: "transform, opacity",
+            }}
+          >
+            <div className="mx-auto flex max-w-5xl flex-col items-center text-center">
+              <span className="glass mb-6 rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--sonoma-deep)] sm:text-xs">
+                Lietuviški baldai • 2008
+              </span>
 
-          {/* Big logo wordmark */}
-          <h1 className="font-extrabold leading-[0.85] tracking-tight text-[var(--foreground)]">
-            <span className="block text-[clamp(3rem,14vw,10rem)]">INNOVA</span>
-            <span
-              className="block text-[clamp(2.5rem,12vw,8.5rem)] italic"
-              style={{
-                background: "var(--gradient-sonoma)",
-                WebkitBackgroundClip: "text",
-                backgroundClip: "text",
-                color: "transparent",
-              }}
-            >
-              BALDAI
-            </span>
-          </h1>
+              <h1 className="font-extrabold leading-[0.85] tracking-tight text-[var(--foreground)] [text-shadow:0_2px_30px_rgba(255,255,255,0.6)]">
+                <span className="block text-[clamp(3rem,14vw,10rem)]">INNOVA</span>
+                <span
+                  className="block text-[clamp(2.5rem,12vw,8.5rem)] italic"
+                  style={{
+                    background: "var(--gradient-sonoma)",
+                    WebkitBackgroundClip: "text",
+                    backgroundClip: "text",
+                    color: "transparent",
+                  }}
+                >
+                  BALDAI
+                </span>
+              </h1>
 
-          <p className="mt-8 max-w-xl text-base text-[var(--muted-foreground)] sm:text-lg">
-            Sonoma ąžuolas, kreminiai paviršiai ir pažangūs vokiški mechanizmai —
-            baldai, kurie tarnauja kasdien ir veikia kaip tobula mašina.
-          </p>
+              <p className="mt-8 max-w-xl text-base text-[var(--foreground)]/85 sm:text-lg [text-shadow:0_1px_18px_rgba(255,255,255,0.7)]">
+                Sonoma ąžuolas, kreminiai paviršiai ir pažangūs vokiški mechanizmai —
+                baldai, kurie tarnauja kasdien ir veikia kaip tobula mašina.
+              </p>
 
-          <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row">
-            <a
-              href="#sequence"
-              className="rounded-full bg-[var(--sonoma-deep)] px-8 py-4 text-sm font-semibold text-[var(--cream-soft)] shadow-[var(--shadow-soft)] transition-transform hover:-translate-y-0.5 sm:text-base"
-            >
-              Pažiūrėti, kaip veikia →
-            </a>
-            <a
-              href="#contact"
-              className="glass rounded-full px-8 py-4 text-sm font-semibold sm:text-base"
-            >
-              Užsisakyti matavimus
-            </a>
+              <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row">
+                <a
+                  href="#sequence"
+                  className="rounded-full bg-[var(--sonoma-deep)] px-8 py-4 text-sm font-semibold text-[var(--cream-soft)] shadow-[var(--shadow-soft)] transition-transform hover:-translate-y-0.5 sm:text-base"
+                >
+                  Pažiūrėti, kaip veikia →
+                </a>
+                <a
+                  href="#contact"
+                  className="glass rounded-full px-8 py-4 text-sm font-semibold sm:text-base"
+                >
+                  Užsisakyti matavimus
+                </a>
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* Scroll cue */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-medium uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-          Skrolinkite žemyn
+          {/* Scroll cue */}
+          <div
+            className="absolute bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-medium uppercase tracking-[0.3em] text-[var(--foreground)]/70"
+            style={{ opacity: contentOpacity }}
+          >
+            Skrolinkite žemyn
+          </div>
         </div>
       </section>
 
