@@ -509,7 +509,7 @@ export const ScrollSequence = forwardRef<ScrollSequenceHandle, Props>(function S
                     height: bottleH * 1.25,
                     transform: "translate(-50%, -50%)",
                     background:
-                      "radial-gradient(ellipse 50% 50% at 50% 50%, rgba(255,236,180,0.95) 0%, rgba(255,210,120,0.45) 40%, rgba(255,210,120,0) 75%)",
+                      "radial-gradient(ellipse 50% 50% at 50% 50%, rgba(255,255,255,0.48) 0%, rgba(255,255,255,0.22) 40%, rgba(255,255,255,0) 75%)",
                     filter: "blur(10px)",
                     mixBlendMode: "screen",
                   }}
@@ -524,7 +524,7 @@ export const ScrollSequence = forwardRef<ScrollSequenceHandle, Props>(function S
                     height: clothsH * 1.7,
                     transform: "translate(-50%, -50%)",
                     background:
-                      "radial-gradient(ellipse 50% 50% at 50% 50%, rgba(200,230,255,0.9) 0%, rgba(160,210,255,0.4) 40%, rgba(160,210,255,0) 75%)",
+                      "radial-gradient(ellipse 50% 50% at 50% 50%, rgba(200,230,255,0.45) 0%, rgba(160,210,255,0.2) 40%, rgba(160,210,255,0) 75%)",
                     filter: "blur(10px)",
                     mixBlendMode: "screen",
                     animationDelay: "0.4s",
