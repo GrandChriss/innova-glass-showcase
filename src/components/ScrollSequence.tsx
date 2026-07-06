@@ -226,7 +226,7 @@ export function ScrollSequence({ heroOverlay }: Props) {
     };
     resize();
     window.addEventListener("resize", resize);
-    const interval = window.setInterval(render, 120);
+    const interval = window.setInterval(render, 16);
 
     // Snap taškai: hero+1 scena, tada kiekvienos kitos scenos pabaiga.
     const snapPoints: number[] = [0];
@@ -303,7 +303,7 @@ export function ScrollSequence({ heroOverlay }: Props) {
       setSeqP(idx === 0 ? 0 : 0.01 + idx * 0.001);
       frameTween = gsap.to(frameTarget, {
         v: target,
-        duration: 1.0,
+        duration: 1.5,
         ease: "power2.inOut",
         overwrite: true,
         onUpdate: () => applyFrame(frameTarget.v),
@@ -319,8 +319,8 @@ export function ScrollSequence({ heroOverlay }: Props) {
       anticipatePin: 1,
       snap: {
         snapTo: snapPoints,
-        duration: { min: 0.4, max: 0.9 },
-        delay: 0.02,
+        duration: { min: 0.2, max: 0.4 },
+        delay: 0,
         ease: "power2.inOut",
       },
       onUpdate: (self) => {
