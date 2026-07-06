@@ -389,8 +389,9 @@ export const ScrollSequence = forwardRef<ScrollSequenceHandle, Props>(function S
         window.scrollTo({ top: targetY, behavior: "auto" });
       } else {
         // Iškart atsirasti pasirinktos scenos PRADŽIOJE ir automatiškai groti sceną.
+        // Pirmos scenos atveju pradedame nuo kadro, kuriame bluras pilnai dingsta.
         const startV =
-          clamped === 1 ? 0 : sceneToVirtualFrame(clamped - 1) + 1;
+          clamped === 1 ? HERO_BLUR_RANGE : sceneToVirtualFrame(clamped - 1) + 1;
         frameTarget.v = startV;
         applyFrame(startV);
         setHeroP(Math.min(1, startV / HERO_BLUR_RANGE));
