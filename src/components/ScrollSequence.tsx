@@ -155,8 +155,6 @@ export function ScrollSequence({ heroOverlay }: Props) {
     window.addEventListener("resize", resize);
     const interval = window.setInterval(render, 120);
 
-    const stageFractions = STAGES.map((s) => s.frame / (TOTAL_FRAMES - 1));
-
     const st = ScrollTrigger.create({
       trigger: section,
       start: "top top",
@@ -176,18 +174,19 @@ export function ScrollSequence({ heroOverlay }: Props) {
           setHeroP(1);
           const sp = (p - HERO_FRACTION) / (1 - HERO_FRACTION);
           setSeqP(sp);
-          stateRef.current.frame = sp * (TOTAL_FRAMES - 1);
+          const frame = sp * (TOTAL_FRAMES - 1);
+          stateRef.current.frame = frame;
           render();
-          let nearest = 0;
-          let best = Infinity;
-          stageFractions.forEach((sf, i) => {
-            const d = Math.abs(sp - sf);
-            if (d < best) {
-              best = d;
-              nearest = i;
+          const currentFrame1 = frame + 1; // 1-based
+          let idx = -1;
+          for (let i = 0; i < STAGES.length; i++) {
+            const s = STAGES[i];
+            if (currentFrame1 >= s.startFrame && currentFrame1 <= s.endFrame) {
+              idx = i;
+              break;
             }
-          });
-          setActiveStage(nearest);
+          }
+          setActiveStage(idx);
         }
       },
     });
