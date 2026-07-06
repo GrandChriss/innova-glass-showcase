@@ -603,4 +603,4 @@ export const ScrollSequence = forwardRef<ScrollSequenceHandle, Props>(function S
 
     </section>
   );
-}
+});
