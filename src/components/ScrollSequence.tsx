@@ -352,120 +352,141 @@ export function ScrollSequence({ heroOverlay }: Props) {
         </div>
       </div>
 
-      {/* 5-oji scena: butelio + šluosčių glow + produktų kortelės */}
-      {productsP > 0 && (
-        <>
-          {/* Švytintys akcentai — atskirai apie butelį (aukštas, siauras) ir šluostes (žemas, platus) */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 z-10"
-            style={{ opacity: productsP }}
-          >
-            {/* Butelio švytėjimas — vertikalus ovalas */}
-            <div
-              className="absolute animate-pulse"
-              style={{
-                left: "11%",
-                top: "68%",
-                width: "10vmin",
-                height: "26vmin",
-                transform: "translate(-50%, -50%)",
-                background:
-                  "radial-gradient(ellipse 50% 50% at 50% 50%, rgba(255,236,180,0.9) 0%, rgba(255,210,120,0.4) 40%, rgba(255,210,120,0) 75%)",
-                filter: "blur(8px)",
-                mixBlendMode: "screen",
-              }}
-            />
-            {/* Šluosčių švytėjimas — horizontalus ovalas */}
-            <div
-              className="absolute animate-pulse"
-              style={{
-                left: "51%",
-                top: "74%",
-                width: "26vmin",
-                height: "14vmin",
-                transform: "translate(-50%, -50%)",
-                background:
-                  "radial-gradient(ellipse 50% 50% at 50% 50%, rgba(200,230,255,0.85) 0%, rgba(160,210,255,0.35) 40%, rgba(160,210,255,0) 75%)",
-                filter: "blur(8px)",
-                mixBlendMode: "screen",
-                animationDelay: "0.4s",
-              }}
-            />
-          </div>
+      {/* 5-oji scena: butelio + šluosčių glow + produktų kortelės — atsiranda tik nuo 540 kadro */}
+      {productsP > 0 && drawnRect.width > 0 && (
+        (() => {
+          // Konvertuojame image-relative koordinates į viewport px pagal faktinę drawnRect padėtį.
+          const toPx = (fx: number, fy: number) => ({
+            x: drawnRect.left + fx * drawnRect.width,
+            y: drawnRect.top + fy * drawnRect.height,
+          });
+          const bottleC = toPx(BOTTLE.cx, BOTTLE.cy);
+          const bottleW = BOTTLE.w * drawnRect.width;
+          const bottleH = BOTTLE.h * drawnRect.height;
+          const bottleRightPx = bottleC.x + bottleW / 2;
+          const clothsC = toPx(CLOTHS.cx, CLOTHS.cy);
+          const clothsW = CLOTHS.w * drawnRect.width;
+          const clothsH = CLOTHS.h * drawnRect.height;
+          const clothsRightPx = clothsC.x + clothsW / 2;
 
-          {/* Butelio kortelė — dešinėje butelio pusėje */}
-          <div
-            className="pointer-events-none absolute z-20"
-            style={{
-              left: "20%",
-              top: "50%",
-              transform: `translateY(-50%) translateX(${(1 - productsP) * -30}px)`,
-              opacity: productsP,
-              transition: "opacity 300ms ease, transform 400ms ease",
-              width: "min(88vw, 320px)",
-            }}
-          >
-            <article className="glass-strong pointer-events-auto rounded-3xl p-4 sm:p-5">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--sonoma-deep)]">
-                {PRODUCTS[0].tagline}
-              </div>
-              <h4 className="mt-1 text-base font-bold leading-tight sm:text-lg">
-                {PRODUCTS[0].name}
-              </h4>
-              <p className="mt-2 text-[12px] leading-relaxed text-[var(--foreground)]/85 sm:text-sm">
-                {PRODUCTS[0].desc}
-              </p>
-              <div className="mt-3 flex items-center justify-between gap-3">
-                <div className="text-lg font-extrabold text-[var(--sonoma-deep)]">
-                  {PRODUCTS[0].price}
-                </div>
-                <button
-                  type="button"
-                  className="rounded-full bg-[var(--sonoma-deep)] px-4 py-2 text-xs font-semibold text-[var(--cream-soft)] shadow-[var(--shadow-soft)] transition-transform hover:-translate-y-0.5 sm:text-sm"
-                >
-                  Pirkti →
-                </button>
-              </div>
-            </article>
-          </div>
+          const GAP = 20;
+          const CARD_W = 300;
 
-          {/* Šluosčių kortelė — dešinėje šluosčių pusėje */}
-          <div
-            className="pointer-events-none absolute z-20"
-            style={{
-              left: "63%",
-              top: "50%",
-              transform: `translateY(-50%) translateX(${(1 - productsP) * 30}px)`,
-              opacity: productsP,
-              transition: "opacity 300ms ease, transform 400ms ease",
-              width: "min(88vw, 340px)",
-            }}
-          >
-            <article className="glass-strong pointer-events-auto rounded-3xl p-4 sm:p-5">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--sonoma-deep)]">
-                {PRODUCTS[1].tagline}
+          return (
+            <>
+              {/* Švytintys akcentai — pagal butelio ir šluosčių formas */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 z-10"
+                style={{ opacity: productsP }}
+              >
+                {/* Butelio glow — vertikalus ovalas apie butelį */}
+                <div
+                  className="absolute animate-pulse"
+                  style={{
+                    left: bottleC.x,
+                    top: bottleC.y,
+                    width: bottleW * 1.9,
+                    height: bottleH * 1.25,
+                    transform: "translate(-50%, -50%)",
+                    background:
+                      "radial-gradient(ellipse 50% 50% at 50% 50%, rgba(255,236,180,0.95) 0%, rgba(255,210,120,0.45) 40%, rgba(255,210,120,0) 75%)",
+                    filter: "blur(10px)",
+                    mixBlendMode: "screen",
+                  }}
+                />
+                {/* Šluosčių glow — horizontalus ovalas apie šluostes */}
+                <div
+                  className="absolute animate-pulse"
+                  style={{
+                    left: clothsC.x,
+                    top: clothsC.y,
+                    width: clothsW * 1.4,
+                    height: clothsH * 1.7,
+                    transform: "translate(-50%, -50%)",
+                    background:
+                      "radial-gradient(ellipse 50% 50% at 50% 50%, rgba(200,230,255,0.9) 0%, rgba(160,210,255,0.4) 40%, rgba(160,210,255,0) 75%)",
+                    filter: "blur(10px)",
+                    mixBlendMode: "screen",
+                    animationDelay: "0.4s",
+                  }}
+                />
               </div>
-              <h4 className="mt-1 text-base font-bold leading-tight sm:text-lg">
-                {PRODUCTS[1].name}
-              </h4>
-              <p className="mt-2 text-[12px] leading-relaxed text-[var(--foreground)]/85 sm:text-sm">
-                {PRODUCTS[1].desc}
-              </p>
-              <div className="mt-3 flex items-center justify-between gap-3">
-                <div className="text-lg font-extrabold text-[var(--sonoma-deep)]">
-                  {PRODUCTS[1].price}
-                </div>
-                <button
-                  type="button"
-                  className="rounded-full bg-[var(--sonoma-deep)] px-4 py-2 text-xs font-semibold text-[var(--cream-soft)] shadow-[var(--shadow-soft)] transition-transform hover:-translate-y-0.5 sm:text-sm"
-                >
-                  Pirkti →
-                </button>
+
+              {/* Butelio kortelė — dešinėje butelio pusėje */}
+              <div
+                className="pointer-events-none absolute z-20"
+                style={{
+                  left: bottleRightPx + GAP,
+                  top: bottleC.y,
+                  transform: `translateY(-50%) translateX(${(1 - productsP) * -20}px)`,
+                  opacity: productsP,
+                  transition: "opacity 300ms ease, transform 400ms ease",
+                  width: `min(90vw, ${CARD_W}px)`,
+                }}
+              >
+                <article className="glass-strong pointer-events-auto rounded-3xl p-4 sm:p-5">
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--sonoma-deep)]">
+                    {PRODUCTS[0].tagline}
+                  </div>
+                  <h4 className="mt-1 text-base font-bold leading-tight sm:text-lg">
+                    {PRODUCTS[0].name}
+                  </h4>
+                  <p className="mt-2 text-[12px] leading-relaxed text-[var(--foreground)]/85 sm:text-sm">
+                    {PRODUCTS[0].desc}
+                  </p>
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <div className="text-lg font-extrabold text-[var(--sonoma-deep)]">
+                      {PRODUCTS[0].price}
+                    </div>
+                    <button
+                      type="button"
+                      className="rounded-full bg-[var(--sonoma-deep)] px-4 py-2 text-xs font-semibold text-[var(--cream-soft)] shadow-[var(--shadow-soft)] transition-transform hover:-translate-y-0.5 sm:text-sm"
+                    >
+                      Pirkti →
+                    </button>
+                  </div>
+                </article>
               </div>
-            </article>
-          </div>
-        </>
+
+              {/* Šluosčių kortelė — dešinėje šluosčių pusėje */}
+              <div
+                className="pointer-events-none absolute z-20"
+                style={{
+                  left: clothsRightPx + GAP,
+                  top: clothsC.y,
+                  transform: `translateY(-50%) translateX(${(1 - productsP) * 20}px)`,
+                  opacity: productsP,
+                  transition: "opacity 300ms ease, transform 400ms ease",
+                  width: `min(90vw, ${CARD_W}px)`,
+                }}
+              >
+                <article className="glass-strong pointer-events-auto rounded-3xl p-4 sm:p-5">
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--sonoma-deep)]">
+                    {PRODUCTS[1].tagline}
+                  </div>
+                  <h4 className="mt-1 text-base font-bold leading-tight sm:text-lg">
+                    {PRODUCTS[1].name}
+                  </h4>
+                  <p className="mt-2 text-[12px] leading-relaxed text-[var(--foreground)]/85 sm:text-sm">
+                    {PRODUCTS[1].desc}
+                  </p>
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <div className="text-lg font-extrabold text-[var(--sonoma-deep)]">
+                      {PRODUCTS[1].price}
+                    </div>
+                    <button
+                      type="button"
+                      className="rounded-full bg-[var(--sonoma-deep)] px-4 py-2 text-xs font-semibold text-[var(--cream-soft)] shadow-[var(--shadow-soft)] transition-transform hover:-translate-y-0.5 sm:text-sm"
+                    >
+                      Pirkti →
+                    </button>
+                  </div>
+                </article>
+              </div>
+            </>
+          );
+        })()
       )}
 
     </section>
