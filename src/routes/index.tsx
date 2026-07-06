@@ -24,6 +24,8 @@ export const Route = createFileRoute("/")({
 function Home() {
   // Nav stiliaus progresas — grubiai sekamas pagal scrollY (per pirmus ~120vh).
   const [navP, setNavP] = useState(0);
+  const seqRef = useRef<ScrollSequenceHandle>(null);
+  const [fade, setFade] = useState(0);
 
   useEffect(() => {
     const onScroll = () => {
@@ -39,6 +41,14 @@ function Home() {
       window.removeEventListener("resize", onScroll);
     };
   }, []);
+
+  const jumpTo = (idx: number) => {
+    setFade(1);
+    window.setTimeout(() => {
+      seqRef.current?.jumpToScene(idx);
+      window.setTimeout(() => setFade(0), 60);
+    }, 220);
+  };
 
   const navBg = 0.72 - navP * 0.42;
   const navBlur = 14 + navP * 22;
