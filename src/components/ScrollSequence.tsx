@@ -361,12 +361,9 @@ export function ScrollSequence({ heroOverlay }: Props) {
           }
         },
       },
-      onUpdate: (self) => {
-        // Tik hero blur smooth perėjimui hero fazėje — scenų NEKEIČIAM čia.
-        if (currentSceneIdx === 0) {
-          setHeroP(Math.min(1, self.progress / HERO_FRACTION));
-        }
-      },
+      // heroP valdomas TIK per frame tween goToScene() viduje,
+      // kad grįžimas iš scenos 1 atgal į hero atrodytų taip pat kaip pirmyn.
+
     });
 
     return () => {
