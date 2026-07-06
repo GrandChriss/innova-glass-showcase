@@ -30,6 +30,8 @@ const STAGES = [
   {
     startFrame: 1,
     endFrame: 100,
+    cardStartFrame: 80,
+    cardEndFrame: 100,
     title: "Stalčiai",
     subtitle: "Tylaus uždarymo bėgeliai",
     text: "Aukščiausios kokybės Blum stalčių sistema su pilnu ištraukimu. Ergonomiškas uždarymas be triukšmo, atlaikantis iki 40 kg krovinį.",
@@ -37,6 +39,8 @@ const STAGES = [
   {
     startFrame: 120,
     endFrame: 220,
+    cardStartFrame: 200,
+    cardEndFrame: 220,
     title: "Cargo krepšys",
     subtitle: "Maksimali talpa siauroje erdvėje",
     text: "Praktiškas siauras cargo modulis prieskoniams ir buteliams. Lengvai pasiekiamas iš abiejų pusių, su minkšto uždarymo mechanizmu.",
@@ -44,6 +48,8 @@ const STAGES = [
   {
     startFrame: 240,
     endFrame: 340,
+    cardStartFrame: 320,
+    cardEndFrame: 340,
     title: "Durelės ir lankstai",
     subtitle: "110° kampo atidarymas",
     text: "Integruoti soft-close lankstai su 3D reguliavimu. Tiksli durelių linija, ilgaamžiškumas testuotas 80 000 atidarymo ciklų.",
@@ -51,6 +57,8 @@ const STAGES = [
   {
     startFrame: 360,
     endFrame: 460,
+    cardStartFrame: 340,
+    cardEndFrame: 360,
     title: "Pakeliamos durelės",
     subtitle: "Aventos pakėlimo sistema",
     text: "Automatinė pakeliamų durelių sistema su pneumatiniais amortizatoriais. Lengvas valdymas vienu pirštu, sustojimas bet kuriame aukštyje.",
@@ -145,6 +153,7 @@ export function ScrollSequence({ heroOverlay }: Props) {
   const imagesRef = useRef<HTMLImageElement[]>([]);
   const stateRef = useRef({ frame: 0 });
   const [activeStage, setActiveStage] = useState(0);
+  const [activeCard, setActiveCard] = useState(-1);
   const [heroP, setHeroP] = useState(0);
   const [seqP, setSeqP] = useState(0); // 0 hero fazėje, > 0 kai prasideda sequence
   const [productsP, setProductsP] = useState(0); // 0 ne produktų scenoje, 0→1 įėjimo animacijai
@@ -242,6 +251,19 @@ export function ScrollSequence({ heroOverlay }: Props) {
           }
           setActiveStage(idx);
 
+          let cardIdx = -1;
+          for (let i = 0; i < STAGES.length; i++) {
+            const s = STAGES[i];
+            if (
+              currentFrame1 >= s.cardStartFrame &&
+              currentFrame1 <= s.cardEndFrame
+            ) {
+              cardIdx = i;
+              break;
+            }
+          }
+          setActiveCard(cardIdx);
+
           // Produktų scena (butelis + šluostės)
           if (
             currentFrame1 >= PRODUCTS_START_FRAME &&
@@ -316,7 +338,7 @@ export function ScrollSequence({ heroOverlay }: Props) {
 
       <div className="pointer-events-none absolute inset-0 z-10 flex items-end justify-end p-4 sm:items-center sm:p-10">
         {STAGES.map((s, i) => {
-          const active = showStageUI && i === activeStage;
+          const active = showStageUI && i === activeCard;
           return (
             <article
               key={s.title}
