@@ -4,48 +4,61 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
 
-// Load all frame asset pointers and sort by filename.
-const frameModules = import.meta.glob<{ url: string }>(
-  "../assets/sequence/frame-*.webp.asset.json",
-  { eager: true, import: "default" },
+// Load all frame images and sort by filename.
+const frameModules = import.meta.glob<string>(
+  "../assets/sequence/*.webp",
+  { eager: true, import: "default", query: "?url" },
 );
 const FRAME_URLS: string[] = Object.keys(frameModules)
   .sort()
-  .map((k) => frameModules[k].url);
+  .map((k) => frameModules[k]);
 const TOTAL_FRAMES = FRAME_URLS.length;
 
 // Hero fazė užima šią bendro pinuoto scroll dalį — jos metu kadras stovi ties 0.
-const HERO_FRACTION = 1 / 6; // 1 iš 6 viewporto aukščių
+const HERO_FRACTION = 1 / 7;
 const HERO_SCROLL_VH = 1;
-const SEQUENCE_SCROLL_VH = 5;
+const SEQUENCE_SCROLL_VH = 8;
 const TOTAL_SCROLL_VH = HERO_SCROLL_VH + SEQUENCE_SCROLL_VH;
 
+// Scenų kadrų ribos (1-based, kaip nurodė vartotojas):
+// 1 Scena  1–100    Stalčiai
+// 2 Scena  120–220  Cargo krepšys
+// 3 Scena  240–340  Durelės ir lankstai
+// 4 Scena  360–460  Automatinių pakeliamų durelių sistema
+// 5 Scena  480–540  Produktai (be kortelės)
 const STAGES = [
   {
-    frame: Math.round(TOTAL_FRAMES * 0.12),
+    startFrame: 1,
+    endFrame: 100,
     title: "Stalčiai",
     subtitle: "Tylaus uždarymo bėgeliai",
     text: "Aukščiausios kokybės Blum stalčių sistema su pilnu ištraukimu. Ergonomiškas uždarymas be triukšmo, atlaikantis iki 40 kg krovinį.",
   },
   {
-    frame: Math.round(TOTAL_FRAMES * 0.4),
+    startFrame: 120,
+    endFrame: 220,
     title: "Cargo krepšys",
     subtitle: "Maksimali talpa siauroje erdvėje",
     text: "Praktiškas siauras cargo modulis prieskoniams ir buteliams. Lengvai pasiekiamas iš abiejų pusių, su minkšto uždarymo mechanizmu.",
   },
   {
-    frame: Math.round(TOTAL_FRAMES * 0.68),
-    title: "Lankstai",
+    startFrame: 240,
+    endFrame: 340,
+    title: "Durelės ir lankstai",
     subtitle: "110° kampo atidarymas",
     text: "Integruoti soft-close lankstai su 3D reguliavimu. Tiksli durelių linija, ilgaamžiškumas testuotas 80 000 atidarymo ciklų.",
   },
   {
-    frame: Math.round(TOTAL_FRAMES * 0.92),
+    startFrame: 360,
+    endFrame: 460,
     title: "Pakeliamos durelės",
     subtitle: "Aventos pakėlimo sistema",
-    text: "Modernios pakeliamos durelės su pneumatiniais amortizatoriais. Lengvas valdymas vienu pirštu, sustojimas bet kuriame aukštyje.",
+    text: "Automatinė pakeliamų durelių sistema su pneumatiniais amortizatoriais. Lengvas valdymas vienu pirštu, sustojimas bet kuriame aukštyje.",
   },
 ];
+
+// Kadras, nuo kurio prasideda 5-oji scena (be kortelės) — nuo čia slepiame korteles.
+const CARDS_HIDE_FROM_FRAME = 470;
 
 function drawImage(
   ctx: CanvasRenderingContext2D,
@@ -142,8 +155,6 @@ export function ScrollSequence({ heroOverlay }: Props) {
     window.addEventListener("resize", resize);
     const interval = window.setInterval(render, 120);
 
-    const stageFractions = STAGES.map((s) => s.frame / (TOTAL_FRAMES - 1));
-
     const st = ScrollTrigger.create({
       trigger: section,
       start: "top top",
@@ -163,18 +174,19 @@ export function ScrollSequence({ heroOverlay }: Props) {
           setHeroP(1);
           const sp = (p - HERO_FRACTION) / (1 - HERO_FRACTION);
           setSeqP(sp);
-          stateRef.current.frame = sp * (TOTAL_FRAMES - 1);
+          const frame = sp * (TOTAL_FRAMES - 1);
+          stateRef.current.frame = frame;
           render();
-          let nearest = 0;
-          let best = Infinity;
-          stageFractions.forEach((sf, i) => {
-            const d = Math.abs(sp - sf);
-            if (d < best) {
-              best = d;
-              nearest = i;
+          const currentFrame1 = frame + 1; // 1-based
+          let idx = -1;
+          for (let i = 0; i < STAGES.length; i++) {
+            const s = STAGES[i];
+            if (currentFrame1 >= s.startFrame && currentFrame1 <= s.endFrame) {
+              idx = i;
+              break;
             }
-          });
-          setActiveStage(nearest);
+          }
+          setActiveStage(idx);
         }
       },
     });
