@@ -166,6 +166,8 @@ export const ScrollSequence = forwardRef<ScrollSequenceHandle, Props>(function S
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imagesRef = useRef<HTMLImageElement[]>([]);
   const stateRef = useRef({ frame: 0 });
+  const jumpRef = useRef<(idx: number) => void>(() => {});
+  useImperativeHandle(ref, () => ({ jumpToScene: (idx) => jumpRef.current(idx) }), []);
   const [activeStage, setActiveStage] = useState(0);
   const [activeCard, setActiveCard] = useState(-1);
   const [heroP, setHeroP] = useState(0);
