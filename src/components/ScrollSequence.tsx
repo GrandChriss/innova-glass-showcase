@@ -306,7 +306,7 @@ export function ScrollSequence({ heroOverlay }: Props) {
       const HERO_BLUR_RANGE = Math.min(20, SCENE_LENGTHS[0]);
       frameTween = gsap.to(frameTarget, {
         v: target,
-        duration: 1.95,
+        duration: 2.55,
         ease: "power2.inOut",
         overwrite: true,
         onUpdate: () => {
