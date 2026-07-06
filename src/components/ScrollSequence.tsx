@@ -57,8 +57,24 @@ const STAGES = [
   },
 ];
 
-// Kadras, nuo kurio prasideda 5-oji scena (be kortelės) — nuo čia slepiame korteles.
-const CARDS_HIDE_FROM_FRAME = 470;
+// 5-oji scena — produktai pardavimui (butelis + šluostės). Kortelių nerodome, vietoje jų — produktai.
+const PRODUCTS_START_FRAME = 470;
+const PRODUCTS_END_FRAME = 560;
+
+const PRODUCTS = [
+  {
+    name: "Baldų valiklis 500ml",
+    tagline: "Sonoma paviršiams",
+    desc: "Švelnus pH-neutralus valiklis, saugus laminuotiems ir natūralios medienos paviršiams. Nepalieka dryžių, atgaivina spalvą ir sukuria apsauginį sluoksnį nuo pirštų atspaudų.",
+    price: "14,90 €",
+  },
+  {
+    name: "Mikropluošto šluostės (2 vnt.)",
+    tagline: "Anti-scratch komplektas",
+    desc: "Ilgapluoštės mikrofibros šluostės specialiai baldų fasadams. Nepalieka žymių, plaunamos iki 300 kartų. Viena sausam blizginimui, kita drėgnam valymui.",
+    price: "8,50 €",
+  },
+];
 
 function drawImage(
   ctx: CanvasRenderingContext2D,
