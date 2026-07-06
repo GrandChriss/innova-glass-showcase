@@ -115,6 +115,7 @@ function Home() {
       <div id="top" />
       <div id="sequence">
         <ScrollSequence
+          ref={seqRef}
           heroOverlay={(p) => {
             // p: 0 pradžioje (blur + tekstai), 1 kai matomas grynas kadras.
             const blurPx = (1 - p) * 22.4;
