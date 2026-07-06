@@ -424,17 +424,14 @@ export const ScrollSequence = forwardRef<ScrollSequenceHandle, Props>(function S
             <article
               key={s.title}
               aria-hidden={!active}
-              className={`glass-strong pointer-events-auto absolute max-w-md rounded-3xl p-6 transition-all duration-700 ease-out sm:p-8 ${
+              className={`liquid-glass pointer-events-auto absolute max-w-md rounded-3xl p-6 transition-all duration-700 ease-out sm:p-8 ${
                 active
                   ? "translate-x-0 opacity-100"
                   : "translate-x-[120%] opacity-0"
               }`}
               style={{ right: "1rem", bottom: "1rem" }}
             >
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--sonoma-deep)]">
-                Etapas 0{i + 1}
-              </div>
-              <h3 className="mt-2 text-2xl font-bold sm:text-3xl">{s.title}</h3>
+              <h3 className="text-2xl font-bold sm:text-3xl">{s.title}</h3>
               <p className="mt-1 text-sm font-medium text-[var(--muted-foreground)]">
                 {s.subtitle}
               </p>
