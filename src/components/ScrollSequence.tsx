@@ -299,14 +299,20 @@ export function ScrollSequence({ heroOverlay }: Props) {
     const goToScene = (idx: number) => {
       const target = sceneToVirtualFrame(idx);
       if (frameTween) frameTween.kill();
-      setHeroP(idx === 0 ? 0 : 1);
       setSeqP(idx === 0 ? 0 : 0.01 + idx * 0.001);
+      // Blur transition range — sinchronizuotas su kadrų tween'u:
+      // hero→scena1: kadrai 0→~20 keičia heroP 0→1 (blur dingsta),
+      // scena1→hero: kadrai ~20→0 keičia heroP 1→0 (blur atsiranda).
+      const HERO_BLUR_RANGE = Math.min(20, SCENE_LENGTHS[0]);
       frameTween = gsap.to(frameTarget, {
         v: target,
         duration: 1.95,
         ease: "power2.inOut",
         overwrite: true,
-        onUpdate: () => applyFrame(frameTarget.v),
+        onUpdate: () => {
+          applyFrame(frameTarget.v);
+          setHeroP(Math.min(1, frameTarget.v / HERO_BLUR_RANGE));
+        },
       });
     };
 
@@ -355,12 +361,9 @@ export function ScrollSequence({ heroOverlay }: Props) {
           }
         },
       },
-      onUpdate: (self) => {
-        // Tik hero blur smooth perėjimui hero fazėje — scenų NEKEIČIAM čia.
-        if (currentSceneIdx === 0) {
-          setHeroP(Math.min(1, self.progress / HERO_FRACTION));
-        }
-      },
+      // heroP valdomas TIK per frame tween goToScene() viduje,
+      // kad grįžimas iš scenos 1 atgal į hero atrodytų taip pat kaip pirmyn.
+
     });
 
     return () => {
