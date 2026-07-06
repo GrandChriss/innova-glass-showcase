@@ -204,7 +204,19 @@ export function ScrollSequence({ heroOverlay }: Props) {
             }
           }
           setActiveStage(idx);
-        }
+
+          // Produktų scena (butelis + šluostės)
+          if (
+            currentFrame1 >= PRODUCTS_START_FRAME &&
+            currentFrame1 <= PRODUCTS_END_FRAME
+          ) {
+            const range = PRODUCTS_END_FRAME - PRODUCTS_START_FRAME;
+            const raw = (currentFrame1 - PRODUCTS_START_FRAME) / range;
+            // Greita įėjimo animacija per pirmus ~15% scenos
+            setProductsP(Math.min(1, raw / 0.15));
+          } else {
+            setProductsP(0);
+          }
       },
     });
 
