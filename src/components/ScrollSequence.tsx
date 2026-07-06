@@ -251,6 +251,19 @@ export function ScrollSequence({ heroOverlay }: Props) {
           }
           setActiveStage(idx);
 
+          let cardIdx = -1;
+          for (let i = 0; i < STAGES.length; i++) {
+            const s = STAGES[i];
+            if (
+              currentFrame1 >= s.cardStartFrame &&
+              currentFrame1 <= s.cardEndFrame
+            ) {
+              cardIdx = i;
+              break;
+            }
+          }
+          setActiveCard(cardIdx);
+
           // Produktų scena (butelis + šluostės)
           if (
             currentFrame1 >= PRODUCTS_START_FRAME &&
