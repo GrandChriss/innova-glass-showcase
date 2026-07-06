@@ -376,9 +376,28 @@ export const ScrollSequence = forwardRef<ScrollSequenceHandle, Props>(function S
       const clamped = Math.max(0, Math.min(snapPoints.length - 1, idx));
       const pinLen = window.innerHeight * TOTAL_SCROLL_VH;
       const targetY = (st.start ?? 0) + snapPoints[clamped] * pinLen;
-      window.scrollTo({ top: targetY, behavior: "auto" });
+      if (frameTween) frameTween.kill();
       currentSceneIdx = clamped;
-      goToScene(clamped);
+      const HERO_BLUR_RANGE = Math.min(20, SCENE_LENGTHS[0]);
+
+      if (clamped === 0) {
+        // Iškart atsirasti top ekrane — jokios atbulinės animacijos per scenas.
+        frameTarget.v = 0;
+        applyFrame(0);
+        setHeroP(0);
+        setSeqP(0);
+        window.scrollTo({ top: targetY, behavior: "auto" });
+      } else {
+        // Iškart atsirasti pasirinktos scenos PRADŽIOJE ir automatiškai groti sceną.
+        const startV =
+          clamped === 1 ? 0 : sceneToVirtualFrame(clamped - 1) + 1;
+        frameTarget.v = startV;
+        applyFrame(startV);
+        setHeroP(Math.min(1, startV / HERO_BLUR_RANGE));
+        window.scrollTo({ top: targetY, behavior: "auto" });
+        // Paleidžiam scenos animaciją nuo pradžios iki pabaigos.
+        goToScene(clamped);
+      }
     };
 
     return () => {
