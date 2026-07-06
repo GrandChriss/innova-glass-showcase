@@ -303,7 +303,7 @@ export function ScrollSequence({ heroOverlay }: Props) {
       setSeqP(idx === 0 ? 0 : 0.01 + idx * 0.001);
       frameTween = gsap.to(frameTarget, {
         v: target,
-        duration: 1.5,
+        duration: 1.95,
         ease: "power2.inOut",
         overwrite: true,
         onUpdate: () => applyFrame(frameTarget.v),
@@ -313,7 +313,7 @@ export function ScrollSequence({ heroOverlay }: Props) {
     // Skrolinimas keičia scenas TIK po vieną — nesvarbu kaip stipriai vartotojas
     // paslenka, per vieną „scroll gesture" pereinama tik į kaimyninę sceną.
     let lastStepTime = 0;
-    const STEP_COOLDOWN_MS = 700;
+    const STEP_COOLDOWN_MS = 1400;
 
     const st = ScrollTrigger.create({
       trigger: section,
@@ -343,7 +343,7 @@ export function ScrollSequence({ heroOverlay }: Props) {
         const delta = p - currentP;
         // Reikalaujame juntamo poslinkio nuo dabartinio snap taško + cooldown,
         // kad greitas / ilgas skrolo judesys neperšoktų kelių scenų iš karto.
-        if (Math.abs(delta) > 0.01) {
+        if (Math.abs(delta) > 0.03) {
           const now = performance.now();
           if (now - lastStepTime > STEP_COOLDOWN_MS) {
             const dir = delta > 0 ? 1 : -1;
