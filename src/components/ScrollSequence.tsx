@@ -310,6 +310,11 @@ export function ScrollSequence({ heroOverlay }: Props) {
       });
     };
 
+    // Skrolinimas keičia scenas TIK po vieną — nesvarbu kaip stipriai vartotojas
+    // paslenka, per vieną „scroll gesture" pereinama tik į kaimyninę sceną.
+    let lastStepTime = 0;
+    const STEP_COOLDOWN_MS = 700;
+
     const st = ScrollTrigger.create({
       trigger: section,
       start: "top top",
@@ -318,25 +323,40 @@ export function ScrollSequence({ heroOverlay }: Props) {
       pin: true,
       anticipatePin: 1,
       snap: {
-        snapTo: snapPoints,
+        // Snap taškas ribojamas iki dabartinės scenos ±1 — negalima peršokti kelių scenų.
+        snapTo: (value) => {
+          const currentP = snapPoints[currentSceneIdx];
+          const dir = value > currentP ? 1 : value < currentP ? -1 : 0;
+          const nextIdx = Math.max(
+            0,
+            Math.min(snapPoints.length - 1, currentSceneIdx + dir),
+          );
+          return snapPoints[nextIdx];
+        },
         duration: { min: 0.2, max: 0.4 },
         delay: 0,
         ease: "power2.inOut",
       },
       onUpdate: (self) => {
         const p = self.progress;
-        let nearest = 0;
-        let minD = Infinity;
-        for (let i = 0; i < snapPoints.length; i++) {
-          const d = Math.abs(snapPoints[i] - p);
-          if (d < minD) {
-            minD = d;
-            nearest = i;
+        const currentP = snapPoints[currentSceneIdx];
+        const delta = p - currentP;
+        // Reikalaujame juntamo poslinkio nuo dabartinio snap taško + cooldown,
+        // kad greitas / ilgas skrolo judesys neperšoktų kelių scenų iš karto.
+        if (Math.abs(delta) > 0.01) {
+          const now = performance.now();
+          if (now - lastStepTime > STEP_COOLDOWN_MS) {
+            const dir = delta > 0 ? 1 : -1;
+            const target = Math.max(
+              0,
+              Math.min(snapPoints.length - 1, currentSceneIdx + dir),
+            );
+            if (target !== currentSceneIdx) {
+              lastStepTime = now;
+              currentSceneIdx = target;
+              goToScene(target);
+            }
           }
-        }
-        if (nearest !== currentSceneIdx) {
-          currentSceneIdx = nearest;
-          goToScene(nearest);
         }
         if (currentSceneIdx === 0) {
           setHeroP(Math.min(1, p / HERO_FRACTION));
