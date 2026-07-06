@@ -341,8 +341,8 @@ export function ScrollSequence({ heroOverlay }: Props) {
           );
           return snapPoints[nextIdx];
         },
-        duration: { min: 0.3, max: 0.5 },
-        delay: 0.08,
+        duration: { min: 0.15, max: 0.3 },
+        delay: 0.03,
         ease: "power2.inOut",
         onComplete: () => {
           const p = st.progress;
