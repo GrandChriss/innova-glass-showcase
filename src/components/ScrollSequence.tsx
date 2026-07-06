@@ -157,7 +157,11 @@ interface Props {
   heroOverlay?: (heroP: number) => ReactNode;
 }
 
-export function ScrollSequence({ heroOverlay }: Props) {
+export interface ScrollSequenceHandle {
+  jumpToScene: (idx: number) => void;
+}
+
+export const ScrollSequence = forwardRef<ScrollSequenceHandle, Props>(function ScrollSequence({ heroOverlay }, ref) {
   const sectionRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imagesRef = useRef<HTMLImageElement[]>([]);
