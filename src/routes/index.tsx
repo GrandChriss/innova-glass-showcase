@@ -55,6 +55,12 @@ function Home() {
 
   return (
     <main className="relative">
+      {/* Smooth teleport fade overlay */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-[60] bg-[#f6ecd9] transition-opacity duration-200"
+        style={{ opacity: fade }}
+      />
       {/* Floating glass nav */}
       <header className="fixed left-1/2 top-4 z-50 w-[min(94%,960px)] -translate-x-1/2">
         <nav
