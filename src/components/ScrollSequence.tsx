@@ -372,6 +372,15 @@ export const ScrollSequence = forwardRef<ScrollSequenceHandle, Props>(function S
 
     });
 
+    jumpRef.current = (idx: number) => {
+      const clamped = Math.max(0, Math.min(snapPoints.length - 1, idx));
+      const pinLen = window.innerHeight * TOTAL_SCROLL_VH;
+      const targetY = (st.start ?? 0) + snapPoints[clamped] * pinLen;
+      window.scrollTo({ top: targetY, behavior: "auto" });
+      currentSceneIdx = clamped;
+      goToScene(clamped);
+    };
+
     return () => {
       window.removeEventListener("resize", resize);
       window.clearInterval(interval);
