@@ -449,12 +449,12 @@ export function ScrollSequence({ heroOverlay }: Props) {
                 </article>
               </div>
 
-              {/* Šluosčių kortelė — dešinėje šluosčių pusėje */}
+              {/* Šluosčių kortelė — dešinėje šluosčių pusėje, vienodame aukštyje su butelio kortele */}
               <div
                 className="pointer-events-none absolute z-20"
                 style={{
                   left: clothsRightPx + GAP,
-                  top: clothsC.y,
+                  top: bottleC.y,
                   transform: `translateY(-50%) translateX(${(1 - productsP) * 20}px)`,
                   opacity: productsP,
                   transition: "opacity 300ms ease, transform 400ms ease",
