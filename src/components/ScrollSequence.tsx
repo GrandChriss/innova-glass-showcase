@@ -405,26 +405,6 @@ export const ScrollSequence = forwardRef<ScrollSequenceHandle, Props>(function S
         </div>
       )}
 
-      {/* Stage pills — matomi tik sequence fazėje */}
-      <div
-        className="pointer-events-none absolute left-1/2 top-6 z-20 -translate-x-1/2 transition-opacity duration-300"
-        style={{ opacity: showStageUI ? 1 : 0 }}
-      >
-        <div className="glass flex items-center gap-1.5 rounded-full px-2 py-2 sm:gap-2 sm:px-3">
-          {STAGES.map((s, i) => (
-            <div
-              key={s.title}
-              className={`rounded-full px-2.5 py-1 text-[10px] font-semibold transition-all sm:px-3 sm:text-xs ${
-                i === activeStage
-                  ? "bg-[var(--sonoma-deep)] text-[var(--cream-soft)]"
-                  : "text-[var(--muted-foreground)]"
-              }`}
-            >
-              {s.title}
-            </div>
-          ))}
-        </div>
-      </div>
 
       <div className="pointer-events-none absolute inset-0 z-10 flex items-end justify-end p-4 sm:items-center sm:p-10">
         {STAGES.map((s, i) => {
