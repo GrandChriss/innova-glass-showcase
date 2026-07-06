@@ -117,6 +117,7 @@ export function ScrollSequence({ heroOverlay }: Props) {
   const [activeStage, setActiveStage] = useState(0);
   const [heroP, setHeroP] = useState(0);
   const [seqP, setSeqP] = useState(0); // 0 hero fazėje, > 0 kai prasideda sequence
+  const [productsP, setProductsP] = useState(0); // 0 ne produktų scenoje, 0→1 įėjimo animacijai
   const [loaded, setLoaded] = useState(0);
 
   useEffect(() => {
