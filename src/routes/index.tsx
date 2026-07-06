@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { ScrollSequence } from "@/components/ScrollSequence";
+import { useEffect, useRef, useState } from "react";
+import { ScrollSequence, type ScrollSequenceHandle } from "@/components/ScrollSequence";
 
 export const Route = createFileRoute("/")({
   head: () => ({
