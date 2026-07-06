@@ -15,22 +15,18 @@ const FRAME_URLS: string[] = Object.keys(frameModules)
 const TOTAL_FRAMES = FRAME_URLS.length;
 
 // Hero fazė užima šią bendro pinuoto scroll dalį — jos metu kadras stovi ties 0.
+// Hero + 1-oji scena sudaro pirmą snap segmentą: blur išnyksta ir 1 scena grojama vienu skrolo judesiu.
 const HERO_FRACTION = 1 / 7;
 const HERO_SCROLL_VH = 1;
 const SEQUENCE_SCROLL_VH = 8;
 const TOTAL_SCROLL_VH = HERO_SCROLL_VH + SEQUENCE_SCROLL_VH;
 
-// Scenų kadrų ribos (1-based, kaip nurodė vartotojas):
-// 1 Scena  1–100    Stalčiai
-// 2 Scena  120–220  Cargo krepšys
-// 3 Scena  240–340  Durelės ir lankstai
-// 4 Scena  360–460  Automatinių pakeliamų durelių sistema
-// 5 Scena  480–540  Produktai (be kortelės)
+// Scenų kadrų ribos (1-based). Pauzės tarp scenų praleidžiamos scroll’o metu.
 const STAGES = [
   {
     startFrame: 1,
     endFrame: 100,
-    cardStartFrame: 80,
+    cardStartFrame: 79, // +1 kadrą ilgiau nei anksčiau
     cardEndFrame: 100,
     title: "Stalčiai",
     subtitle: "Tylaus uždarymo bėgeliai",
@@ -39,7 +35,7 @@ const STAGES = [
   {
     startFrame: 120,
     endFrame: 220,
-    cardStartFrame: 200,
+    cardStartFrame: 199,
     cardEndFrame: 220,
     title: "Cargo krepšys",
     subtitle: "Maksimali talpa siauroje erdvėje",
@@ -48,7 +44,7 @@ const STAGES = [
   {
     startFrame: 240,
     endFrame: 340,
-    cardStartFrame: 320,
+    cardStartFrame: 319,
     cardEndFrame: 340,
     title: "Durelės ir lankstai",
     subtitle: "110° kampo atidarymas",
@@ -57,13 +53,27 @@ const STAGES = [
   {
     startFrame: 360,
     endFrame: 460,
-    cardStartFrame: 340,
-    cardEndFrame: 360,
+    cardStartFrame: 439,
+    cardEndFrame: 460,
     title: "Pakeliamos durelės",
     subtitle: "Aventos pakėlimo sistema",
     text: "Automatinė pakeliamų durelių sistema su pneumatiniais amortizatoriais. Lengvas valdymas vienu pirštu, sustojimas bet kuriame aukštyje.",
   },
+  {
+    // 5-oji scena — produktai (be teksto kortelės; glow + pirkimo kortelės žemiau).
+    startFrame: 480,
+    endFrame: 560,
+    cardStartFrame: -1,
+    cardEndFrame: -1,
+    title: "Produktai",
+    subtitle: "",
+    text: "",
+  },
 ];
+
+// Sujungtos scenos (praleidžiant pauzes) — virtualus kadrų srautas scroll mapping’ui.
+const SCENE_LENGTHS = STAGES.map((s) => s.endFrame - s.startFrame + 1);
+const TOTAL_SCENE_FRAMES = SCENE_LENGTHS.reduce((a, b) => a + b, 0);
 
 // 5-oji scena — produktai pardavimui (butelis + šluostės). Glow + kortelės atsiranda nuo 540 kadro iki galo.
 const PRODUCTS_START_FRAME = 540;
