@@ -338,7 +338,7 @@ export function ScrollSequence({ heroOverlay }: Props) {
 
       <div className="pointer-events-none absolute inset-0 z-10 flex items-end justify-end p-4 sm:items-center sm:p-10">
         {STAGES.map((s, i) => {
-          const active = showStageUI && i === activeStage;
+          const active = showStageUI && i === activeCard;
           return (
             <article
               key={s.title}
