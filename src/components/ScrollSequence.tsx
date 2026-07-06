@@ -202,6 +202,7 @@ export function ScrollSequence({ heroOverlay }: Props) {
       const dpr = window.devicePixelRatio || 1;
       canvas.width = rect.width * dpr;
       canvas.height = rect.height * dpr;
+      setDrawnRect(computeDrawnRect(rect.width, rect.height));
       render();
     };
     resize();
