@@ -57,9 +57,14 @@ const STAGES = [
   },
 ];
 
-// 5-oji scena — produktai pardavimui (butelis + šluostės). Kortelių nerodome, vietoje jų — produktai.
-const PRODUCTS_START_FRAME = 470;
+// 5-oji scena — produktai pardavimui (butelis + šluostės). Glow + kortelės atsiranda nuo 540 kadro iki galo.
+const PRODUCTS_START_FRAME = 540;
 const PRODUCTS_END_FRAME = 560;
+
+// Objektų padėtys pačiame paskutiniame (560) kadre, image-relative koordinatėse (0..1 nuo 1920x1080).
+// Reikšmės nuskaitytos iš paskutinio kadro (butelis kairėje, šluostės centre-dešinėje).
+const BOTTLE = { cx: 0.193, cy: 0.481, w: 0.09, h: 0.42 };
+const CLOTHS = { cx: 0.599, cy: 0.593, w: 0.22, h: 0.24 };
 
 const PRODUCTS = [
   {
@@ -75,6 +80,31 @@ const PRODUCTS = [
     price: "8,50 €",
   },
 ];
+
+// Frame aspect ratio (visi kadrai 1920x1080).
+const FRAME_AR = 16 / 9;
+
+interface DrawnRect {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+/** Grąžina, kaip 16:9 kadras yra faktiškai atvaizduotas ant kanvo su "cover" logika. */
+function computeDrawnRect(w: number, h: number): DrawnRect {
+  const cr = w / h;
+  let dw: number;
+  let dh: number;
+  if (FRAME_AR > cr) {
+    dh = h;
+    dw = h * FRAME_AR;
+  } else {
+    dw = w;
+    dh = w / FRAME_AR;
+  }
+  return { left: (w - dw) / 2, top: (h - dh) / 2, width: dw, height: dh };
+}
 
 function drawImage(
   ctx: CanvasRenderingContext2D,
