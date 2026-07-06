@@ -229,87 +229,117 @@ export function ScrollSequence({ heroOverlay }: Props) {
     const interval = window.setInterval(render, 120);
 
     // Snap taškai: hero+1 scena, tada kiekvienos kitos scenos pabaiga.
-    // Vartotojo skrolo judesys automatiškai nutempia iki artimiausio taško.
     const snapPoints: number[] = [0];
     {
       let cum = 0;
       for (let i = 0; i < SCENE_LENGTHS.length; i++) {
         cum += SCENE_LENGTHS[i];
-        const virtualEnd = cum - 1; // 0-based virtualus kadro indeksas scenos pabaigoje
+        const virtualEnd = cum - 1;
         const pSeq = virtualEnd / (TOTAL_SCENE_FRAMES - 1);
         snapPoints.push(HERO_FRACTION + pSeq * (1 - HERO_FRACTION));
       }
     }
 
+    // Kiekvienas snap taškas atitinka „sceną": 0 = hero, 1..N = scenų pabaigos.
+    // Frame animacija ATSIETA nuo scroll progreso — vartotojas skrolindamas TIK
+    // aktyvuoja perėjimą į kitą sceną; kadrai animuojami tolygiai (60fps) per
+    // gsap tween, jų negalima „scrubinti" pele.
+    const frameTarget = { v: 0 };
+    let currentSceneIdx = 0;
+    let frameTween: gsap.core.Tween | null = null;
+
+    const applyFrame = (virtualFrame: number) => {
+      const clamped = Math.max(
+        0,
+        Math.min(TOTAL_SCENE_FRAMES - 1, virtualFrame),
+      );
+      let cum = 0;
+      let frame1 = STAGES[0].startFrame;
+      let stageIdx = 0;
+      for (let i = 0; i < STAGES.length; i++) {
+        const len = SCENE_LENGTHS[i];
+        if (clamped < cum + len) {
+          frame1 = STAGES[i].startFrame + (clamped - cum);
+          stageIdx = i;
+          break;
+        }
+        cum += len;
+      }
+      stateRef.current.frame = frame1 - 1;
+      render();
+      setActiveStage(stageIdx);
+
+      // Kortelė matoma nuo cardStartFrame iki scenos pabaigos —
+      // dingsta tik prasidėjus sekančiai scenai.
+      const s = STAGES[stageIdx];
+      const cardOn =
+        s.cardStartFrame > 0 &&
+        frame1 >= s.cardStartFrame &&
+        frame1 <= s.endFrame;
+      setActiveCard(cardOn ? stageIdx : -1);
+
+      if (frame1 >= PRODUCTS_START_FRAME && frame1 <= PRODUCTS_END_FRAME) {
+        const range = PRODUCTS_END_FRAME - PRODUCTS_START_FRAME;
+        const raw = (frame1 - PRODUCTS_START_FRAME) / range;
+        setProductsP(Math.min(1, raw / 0.15));
+      } else if (frame1 > PRODUCTS_END_FRAME) {
+        setProductsP(1);
+      } else {
+        setProductsP(0);
+      }
+    };
+
+    const sceneToVirtualFrame = (idx: number) => {
+      if (idx <= 0) return 0;
+      let cum = 0;
+      for (let i = 0; i < idx; i++) cum += SCENE_LENGTHS[i];
+      return cum - 1;
+    };
+
+    const goToScene = (idx: number) => {
+      const target = sceneToVirtualFrame(idx);
+      if (frameTween) frameTween.kill();
+      setHeroP(idx === 0 ? 0 : 1);
+      setSeqP(idx === 0 ? 0 : 0.01 + idx * 0.001);
+      frameTween = gsap.to(frameTarget, {
+        v: target,
+        duration: 1.0,
+        ease: "power2.inOut",
+        overwrite: true,
+        onUpdate: () => applyFrame(frameTarget.v),
+      });
+    };
+
     const st = ScrollTrigger.create({
       trigger: section,
       start: "top top",
       end: () => `+=${window.innerHeight * TOTAL_SCROLL_VH}`,
-      scrub: 0.6,
+      scrub: 0.001,
       pin: true,
       anticipatePin: 1,
       snap: {
         snapTo: snapPoints,
-        duration: { min: 0.25, max: 0.7 },
-        delay: 0.05,
+        duration: { min: 0.4, max: 0.9 },
+        delay: 0.02,
         ease: "power2.inOut",
       },
       onUpdate: (self) => {
         const p = self.progress;
-        if (p <= HERO_FRACTION) {
-          const hp = p / HERO_FRACTION; // 0 → 1
-          setHeroP(hp);
-          setSeqP(0);
-          stateRef.current.frame = 0;
-          render();
-        } else {
-          setHeroP(1);
-          const sp = (p - HERO_FRACTION) / (1 - HERO_FRACTION);
-          setSeqP(sp);
-          // Virtualus kadras (praleistos pauzės) → realus kadras scenos ribose.
-          const vpos = sp * (TOTAL_SCENE_FRAMES - 1);
-          let cum = 0;
-          let frame1 = STAGES[0].startFrame;
-          let stageIdx = STAGES.length - 1;
-          for (let i = 0; i < STAGES.length; i++) {
-            const len = SCENE_LENGTHS[i];
-            if (vpos < cum + len) {
-              frame1 = STAGES[i].startFrame + (vpos - cum);
-              stageIdx = i;
-              break;
-            }
-            cum += len;
+        let nearest = 0;
+        let minD = Infinity;
+        for (let i = 0; i < snapPoints.length; i++) {
+          const d = Math.abs(snapPoints[i] - p);
+          if (d < minD) {
+            minD = d;
+            nearest = i;
           }
-          stateRef.current.frame = frame1 - 1; // 0-based
-          render();
-          setActiveStage(stageIdx);
-
-          let cardIdx = -1;
-          for (let i = 0; i < STAGES.length; i++) {
-            const s = STAGES[i];
-            if (
-              s.cardStartFrame > 0 &&
-              frame1 >= s.cardStartFrame &&
-              frame1 <= s.cardEndFrame
-            ) {
-              cardIdx = i;
-              break;
-            }
-          }
-          setActiveCard(cardIdx);
-
-          // Produktų scena (butelis + šluostės)
-          if (
-            frame1 >= PRODUCTS_START_FRAME &&
-            frame1 <= PRODUCTS_END_FRAME
-          ) {
-            const range = PRODUCTS_END_FRAME - PRODUCTS_START_FRAME;
-            const raw = (frame1 - PRODUCTS_START_FRAME) / range;
-            // Greita įėjimo animacija per pirmus ~15% scenos
-            setProductsP(Math.min(1, raw / 0.15));
-          } else {
-            setProductsP(0);
-          }
+        }
+        if (nearest !== currentSceneIdx) {
+          currentSceneIdx = nearest;
+          goToScene(nearest);
+        }
+        if (currentSceneIdx === 0) {
+          setHeroP(Math.min(1, p / HERO_FRACTION));
         }
       },
     });
