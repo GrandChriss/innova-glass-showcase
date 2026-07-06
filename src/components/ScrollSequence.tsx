@@ -517,7 +517,7 @@ export const ScrollSequence = forwardRef<ScrollSequenceHandle, Props>(function S
                   width: `min(90vw, ${CARD_W}px)`,
                 }}
               >
-                <article className="glass-strong pointer-events-auto rounded-3xl p-4 sm:p-5">
+                <article className="liquid-glass pointer-events-auto rounded-3xl p-4 sm:p-5">
                   <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--sonoma-deep)]">
                     {PRODUCTS[0].tagline}
                   </div>
@@ -553,7 +553,7 @@ export const ScrollSequence = forwardRef<ScrollSequenceHandle, Props>(function S
                   width: `min(90vw, ${CARD_W}px)`,
                 }}
               >
-                <article className="glass-strong pointer-events-auto rounded-3xl p-4 sm:p-5">
+                <article className="liquid-glass pointer-events-auto rounded-3xl p-4 sm:p-5">
                   <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--sonoma-deep)]">
                     {PRODUCTS[1].tagline}
                   </div>
