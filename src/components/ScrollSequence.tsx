@@ -228,6 +228,19 @@ export function ScrollSequence({ heroOverlay }: Props) {
     window.addEventListener("resize", resize);
     const interval = window.setInterval(render, 120);
 
+    // Snap taškai: hero+1 scena, tada kiekvienos kitos scenos pabaiga.
+    // Vartotojo skrolo judesys automatiškai nutempia iki artimiausio taško.
+    const snapPoints: number[] = [0];
+    {
+      let cum = 0;
+      for (let i = 0; i < SCENE_LENGTHS.length; i++) {
+        cum += SCENE_LENGTHS[i];
+        const virtualEnd = cum - 1; // 0-based virtualus kadro indeksas scenos pabaigoje
+        const pSeq = virtualEnd / (TOTAL_SCENE_FRAMES - 1);
+        snapPoints.push(HERO_FRACTION + pSeq * (1 - HERO_FRACTION));
+      }
+    }
+
     const st = ScrollTrigger.create({
       trigger: section,
       start: "top top",
@@ -235,6 +248,12 @@ export function ScrollSequence({ heroOverlay }: Props) {
       scrub: 0.6,
       pin: true,
       anticipatePin: 1,
+      snap: {
+        snapTo: snapPoints,
+        duration: { min: 0.25, max: 0.7 },
+        delay: 0.05,
+        ease: "power2.inOut",
+      },
       onUpdate: (self) => {
         const p = self.progress;
         if (p <= HERO_FRACTION) {
@@ -247,26 +266,31 @@ export function ScrollSequence({ heroOverlay }: Props) {
           setHeroP(1);
           const sp = (p - HERO_FRACTION) / (1 - HERO_FRACTION);
           setSeqP(sp);
-          const frame = sp * (TOTAL_FRAMES - 1);
-          stateRef.current.frame = frame;
-          render();
-          const currentFrame1 = frame + 1; // 1-based
-          let idx = -1;
+          // Virtualus kadras (praleistos pauzės) → realus kadras scenos ribose.
+          const vpos = sp * (TOTAL_SCENE_FRAMES - 1);
+          let cum = 0;
+          let frame1 = STAGES[0].startFrame;
+          let stageIdx = STAGES.length - 1;
           for (let i = 0; i < STAGES.length; i++) {
-            const s = STAGES[i];
-            if (currentFrame1 >= s.startFrame && currentFrame1 <= s.endFrame) {
-              idx = i;
+            const len = SCENE_LENGTHS[i];
+            if (vpos < cum + len) {
+              frame1 = STAGES[i].startFrame + (vpos - cum);
+              stageIdx = i;
               break;
             }
+            cum += len;
           }
-          setActiveStage(idx);
+          stateRef.current.frame = frame1 - 1; // 0-based
+          render();
+          setActiveStage(stageIdx);
 
           let cardIdx = -1;
           for (let i = 0; i < STAGES.length; i++) {
             const s = STAGES[i];
             if (
-              currentFrame1 >= s.cardStartFrame &&
-              currentFrame1 <= s.cardEndFrame
+              s.cardStartFrame > 0 &&
+              frame1 >= s.cardStartFrame &&
+              frame1 <= s.cardEndFrame
             ) {
               cardIdx = i;
               break;
@@ -276,11 +300,11 @@ export function ScrollSequence({ heroOverlay }: Props) {
 
           // Produktų scena (butelis + šluostės)
           if (
-            currentFrame1 >= PRODUCTS_START_FRAME &&
-            currentFrame1 <= PRODUCTS_END_FRAME
+            frame1 >= PRODUCTS_START_FRAME &&
+            frame1 <= PRODUCTS_END_FRAME
           ) {
             const range = PRODUCTS_END_FRAME - PRODUCTS_START_FRAME;
-            const raw = (currentFrame1 - PRODUCTS_START_FRAME) / range;
+            const raw = (frame1 - PRODUCTS_START_FRAME) / range;
             // Greita įėjimo animacija per pirmus ~15% scenos
             setProductsP(Math.min(1, raw / 0.15));
           } else {
