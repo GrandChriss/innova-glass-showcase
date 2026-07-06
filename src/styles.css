@@ -95,6 +95,13 @@
   box-shadow: var(--shadow-glass);
 }
 
+@utility liquid-glass {
+  background-color: rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(36px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow: var(--shadow-glass);
+}
+
 @layer base {
   * {
     border-color: var(--color-border);

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type ReactNode } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -157,11 +157,17 @@ interface Props {
   heroOverlay?: (heroP: number) => ReactNode;
 }
 
-export function ScrollSequence({ heroOverlay }: Props) {
+export interface ScrollSequenceHandle {
+  jumpToScene: (idx: number) => void;
+}
+
+export const ScrollSequence = forwardRef<ScrollSequenceHandle, Props>(function ScrollSequence({ heroOverlay }, ref) {
   const sectionRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imagesRef = useRef<HTMLImageElement[]>([]);
   const stateRef = useRef({ frame: 0 });
+  const jumpRef = useRef<(idx: number) => void>(() => {});
+  useImperativeHandle(ref, () => ({ jumpToScene: (idx) => jumpRef.current(idx) }), []);
   const [activeStage, setActiveStage] = useState(0);
   const [activeCard, setActiveCard] = useState(-1);
   const [heroP, setHeroP] = useState(0);
@@ -366,6 +372,15 @@ export function ScrollSequence({ heroOverlay }: Props) {
 
     });
 
+    jumpRef.current = (idx: number) => {
+      const clamped = Math.max(0, Math.min(snapPoints.length - 1, idx));
+      const pinLen = window.innerHeight * TOTAL_SCROLL_VH;
+      const targetY = (st.start ?? 0) + snapPoints[clamped] * pinLen;
+      window.scrollTo({ top: targetY, behavior: "auto" });
+      currentSceneIdx = clamped;
+      goToScene(clamped);
+    };
+
     return () => {
       window.removeEventListener("resize", resize);
       window.clearInterval(interval);
@@ -401,26 +416,6 @@ export function ScrollSequence({ heroOverlay }: Props) {
         </div>
       )}
 
-      {/* Stage pills — matomi tik sequence fazėje */}
-      <div
-        className="pointer-events-none absolute left-1/2 top-6 z-20 -translate-x-1/2 transition-opacity duration-300"
-        style={{ opacity: showStageUI ? 1 : 0 }}
-      >
-        <div className="glass flex items-center gap-1.5 rounded-full px-2 py-2 sm:gap-2 sm:px-3">
-          {STAGES.map((s, i) => (
-            <div
-              key={s.title}
-              className={`rounded-full px-2.5 py-1 text-[10px] font-semibold transition-all sm:px-3 sm:text-xs ${
-                i === activeStage
-                  ? "bg-[var(--sonoma-deep)] text-[var(--cream-soft)]"
-                  : "text-[var(--muted-foreground)]"
-              }`}
-            >
-              {s.title}
-            </div>
-          ))}
-        </div>
-      </div>
 
       <div className="pointer-events-none absolute inset-0 z-10 flex items-end justify-end p-4 sm:items-center sm:p-10">
         {STAGES.map((s, i) => {
@@ -533,7 +528,7 @@ export function ScrollSequence({ heroOverlay }: Props) {
                   width: `min(90vw, ${CARD_W}px)`,
                 }}
               >
-                <article className="glass-strong pointer-events-auto rounded-3xl p-4 sm:p-5">
+                <article className="liquid-glass pointer-events-auto rounded-3xl p-4 sm:p-5">
                   <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--sonoma-deep)]">
                     {PRODUCTS[0].tagline}
                   </div>
@@ -569,7 +564,7 @@ export function ScrollSequence({ heroOverlay }: Props) {
                   width: `min(90vw, ${CARD_W}px)`,
                 }}
               >
-                <article className="glass-strong pointer-events-auto rounded-3xl p-4 sm:p-5">
+                <article className="liquid-glass pointer-events-auto rounded-3xl p-4 sm:p-5">
                   <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--sonoma-deep)]">
                     {PRODUCTS[1].tagline}
                   </div>
@@ -599,4 +594,4 @@ export function ScrollSequence({ heroOverlay }: Props) {
 
     </section>
   );
-}
+});

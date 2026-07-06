@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { ScrollSequence } from "@/components/ScrollSequence";
+import { useEffect, useRef, useState } from "react";
+import { ScrollSequence, type ScrollSequenceHandle } from "@/components/ScrollSequence";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -24,6 +24,8 @@ export const Route = createFileRoute("/")({
 function Home() {
   // Nav stiliaus progresas — grubiai sekamas pagal scrollY (per pirmus ~120vh).
   const [navP, setNavP] = useState(0);
+  const seqRef = useRef<ScrollSequenceHandle>(null);
+  const [fade, setFade] = useState(0);
 
   useEffect(() => {
     const onScroll = () => {
@@ -40,11 +42,25 @@ function Home() {
     };
   }, []);
 
+  const jumpTo = (idx: number) => {
+    setFade(1);
+    window.setTimeout(() => {
+      seqRef.current?.jumpToScene(idx);
+      window.setTimeout(() => setFade(0), 60);
+    }, 220);
+  };
+
   const navBg = 0.72 - navP * 0.42;
   const navBlur = 14 + navP * 22;
 
   return (
     <main className="relative">
+      {/* Smooth teleport fade overlay */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-[60] bg-[#f6ecd9] transition-opacity duration-200"
+        style={{ opacity: fade }}
+      />
       {/* Floating glass nav */}
       <header className="fixed left-1/2 top-4 z-50 w-[min(94%,960px)] -translate-x-1/2">
         <nav
@@ -58,6 +74,10 @@ function Home() {
         >
           <a
             href="#top"
+            onClick={(e) => {
+              e.preventDefault();
+              jumpTo(0);
+            }}
             className="flex items-center gap-2 text-sm font-extrabold tracking-tight sm:text-base"
           >
             <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[var(--sonoma-deep)] text-[var(--cream-soft)] text-[11px] font-black">
@@ -67,13 +87,21 @@ function Home() {
           </a>
           <div className="hidden items-center gap-1 md:flex">
             {[
-              ["Sprendimai", "#sequence"],
-              ["Privalumai", "#features"],
-              ["Kontaktai", "#contact"],
-            ].map(([label, href]) => (
+              { label: "Sprendimai", href: "#sequence", onClick: () => jumpTo(1) },
+              { label: "Privalumai", href: "#features" },
+              { label: "Kontaktai", href: "#contact" },
+            ].map(({ label, href, onClick }) => (
               <a
                 key={label}
                 href={href}
+                onClick={
+                  onClick
+                    ? (e) => {
+                        e.preventDefault();
+                        onClick();
+                      }
+                    : undefined
+                }
                 className="rounded-full px-3 py-1.5 text-sm font-medium text-[var(--muted-foreground)] transition-colors hover:bg-white/40 hover:text-[var(--foreground)]"
               >
                 {label}
@@ -93,6 +121,7 @@ function Home() {
       <div id="top" />
       <div id="sequence">
         <ScrollSequence
+          ref={seqRef}
           heroOverlay={(p) => {
             // p: 0 pradžioje (blur + tekstai), 1 kai matomas grynas kadras.
             const blurPx = (1 - p) * 22.4;
