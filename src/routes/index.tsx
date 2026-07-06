@@ -68,6 +68,10 @@ function Home() {
         >
           <a
             href="#top"
+            onClick={(e) => {
+              e.preventDefault();
+              jumpTo(0);
+            }}
             className="flex items-center gap-2 text-sm font-extrabold tracking-tight sm:text-base"
           >
             <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[var(--sonoma-deep)] text-[var(--cream-soft)] text-[11px] font-black">
@@ -77,13 +81,21 @@ function Home() {
           </a>
           <div className="hidden items-center gap-1 md:flex">
             {[
-              ["Sprendimai", "#sequence"],
-              ["Privalumai", "#features"],
-              ["Kontaktai", "#contact"],
-            ].map(([label, href]) => (
+              { label: "Sprendimai", href: "#sequence", onClick: () => jumpTo(1) },
+              { label: "Privalumai", href: "#features" },
+              { label: "Kontaktai", href: "#contact" },
+            ].map(({ label, href, onClick }) => (
               <a
                 key={label}
                 href={href}
+                onClick={
+                  onClick
+                    ? (e) => {
+                        e.preventDefault();
+                        onClick();
+                      }
+                    : undefined
+                }
                 className="rounded-full px-3 py-1.5 text-sm font-medium text-[var(--muted-foreground)] transition-colors hover:bg-white/40 hover:text-[var(--foreground)]"
               >
                 {label}
