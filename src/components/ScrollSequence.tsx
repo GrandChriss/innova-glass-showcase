@@ -217,6 +217,7 @@ export function ScrollSequence({ heroOverlay }: Props) {
           } else {
             setProductsP(0);
           }
+        }
       },
     });
 
