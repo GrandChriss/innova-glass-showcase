@@ -15,22 +15,18 @@ const FRAME_URLS: string[] = Object.keys(frameModules)
 const TOTAL_FRAMES = FRAME_URLS.length;
 
 // Hero fazė užima šią bendro pinuoto scroll dalį — jos metu kadras stovi ties 0.
+// Hero + 1-oji scena sudaro pirmą snap segmentą: blur išnyksta ir 1 scena grojama vienu skrolo judesiu.
 const HERO_FRACTION = 1 / 7;
 const HERO_SCROLL_VH = 1;
 const SEQUENCE_SCROLL_VH = 8;
 const TOTAL_SCROLL_VH = HERO_SCROLL_VH + SEQUENCE_SCROLL_VH;
 
-// Scenų kadrų ribos (1-based, kaip nurodė vartotojas):
-// 1 Scena  1–100    Stalčiai
-// 2 Scena  120–220  Cargo krepšys
-// 3 Scena  240–340  Durelės ir lankstai
-// 4 Scena  360–460  Automatinių pakeliamų durelių sistema
-// 5 Scena  480–540  Produktai (be kortelės)
+// Scenų kadrų ribos (1-based). Pauzės tarp scenų praleidžiamos scroll’o metu.
 const STAGES = [
   {
     startFrame: 1,
     endFrame: 100,
-    cardStartFrame: 80,
+    cardStartFrame: 79, // +1 kadrą ilgiau nei anksčiau
     cardEndFrame: 100,
     title: "Stalčiai",
     subtitle: "Tylaus uždarymo bėgeliai",
@@ -39,7 +35,7 @@ const STAGES = [
   {
     startFrame: 120,
     endFrame: 220,
-    cardStartFrame: 200,
+    cardStartFrame: 199,
     cardEndFrame: 220,
     title: "Cargo krepšys",
     subtitle: "Maksimali talpa siauroje erdvėje",
@@ -48,7 +44,7 @@ const STAGES = [
   {
     startFrame: 240,
     endFrame: 340,
-    cardStartFrame: 320,
+    cardStartFrame: 319,
     cardEndFrame: 340,
     title: "Durelės ir lankstai",
     subtitle: "110° kampo atidarymas",
@@ -57,13 +53,27 @@ const STAGES = [
   {
     startFrame: 360,
     endFrame: 460,
-    cardStartFrame: 340,
-    cardEndFrame: 360,
+    cardStartFrame: 439,
+    cardEndFrame: 460,
     title: "Pakeliamos durelės",
     subtitle: "Aventos pakėlimo sistema",
     text: "Automatinė pakeliamų durelių sistema su pneumatiniais amortizatoriais. Lengvas valdymas vienu pirštu, sustojimas bet kuriame aukštyje.",
   },
+  {
+    // 5-oji scena — produktai (be teksto kortelės; glow + pirkimo kortelės žemiau).
+    startFrame: 480,
+    endFrame: 560,
+    cardStartFrame: -1,
+    cardEndFrame: -1,
+    title: "Produktai",
+    subtitle: "",
+    text: "",
+  },
 ];
+
+// Sujungtos scenos (praleidžiant pauzes) — virtualus kadrų srautas scroll mapping’ui.
+const SCENE_LENGTHS = STAGES.map((s) => s.endFrame - s.startFrame + 1);
+const TOTAL_SCENE_FRAMES = SCENE_LENGTHS.reduce((a, b) => a + b, 0);
 
 // 5-oji scena — produktai pardavimui (butelis + šluostės). Glow + kortelės atsiranda nuo 540 kadro iki galo.
 const PRODUCTS_START_FRAME = 540;
@@ -218,6 +228,19 @@ export function ScrollSequence({ heroOverlay }: Props) {
     window.addEventListener("resize", resize);
     const interval = window.setInterval(render, 120);
 
+    // Snap taškai: hero+1 scena, tada kiekvienos kitos scenos pabaiga.
+    // Vartotojo skrolo judesys automatiškai nutempia iki artimiausio taško.
+    const snapPoints: number[] = [0];
+    {
+      let cum = 0;
+      for (let i = 0; i < SCENE_LENGTHS.length; i++) {
+        cum += SCENE_LENGTHS[i];
+        const virtualEnd = cum - 1; // 0-based virtualus kadro indeksas scenos pabaigoje
+        const pSeq = virtualEnd / (TOTAL_SCENE_FRAMES - 1);
+        snapPoints.push(HERO_FRACTION + pSeq * (1 - HERO_FRACTION));
+      }
+    }
+
     const st = ScrollTrigger.create({
       trigger: section,
       start: "top top",
@@ -225,6 +248,12 @@ export function ScrollSequence({ heroOverlay }: Props) {
       scrub: 0.6,
       pin: true,
       anticipatePin: 1,
+      snap: {
+        snapTo: snapPoints,
+        duration: { min: 0.25, max: 0.7 },
+        delay: 0.05,
+        ease: "power2.inOut",
+      },
       onUpdate: (self) => {
         const p = self.progress;
         if (p <= HERO_FRACTION) {
@@ -237,26 +266,31 @@ export function ScrollSequence({ heroOverlay }: Props) {
           setHeroP(1);
           const sp = (p - HERO_FRACTION) / (1 - HERO_FRACTION);
           setSeqP(sp);
-          const frame = sp * (TOTAL_FRAMES - 1);
-          stateRef.current.frame = frame;
-          render();
-          const currentFrame1 = frame + 1; // 1-based
-          let idx = -1;
+          // Virtualus kadras (praleistos pauzės) → realus kadras scenos ribose.
+          const vpos = sp * (TOTAL_SCENE_FRAMES - 1);
+          let cum = 0;
+          let frame1 = STAGES[0].startFrame;
+          let stageIdx = STAGES.length - 1;
           for (let i = 0; i < STAGES.length; i++) {
-            const s = STAGES[i];
-            if (currentFrame1 >= s.startFrame && currentFrame1 <= s.endFrame) {
-              idx = i;
+            const len = SCENE_LENGTHS[i];
+            if (vpos < cum + len) {
+              frame1 = STAGES[i].startFrame + (vpos - cum);
+              stageIdx = i;
               break;
             }
+            cum += len;
           }
-          setActiveStage(idx);
+          stateRef.current.frame = frame1 - 1; // 0-based
+          render();
+          setActiveStage(stageIdx);
 
           let cardIdx = -1;
           for (let i = 0; i < STAGES.length; i++) {
             const s = STAGES[i];
             if (
-              currentFrame1 >= s.cardStartFrame &&
-              currentFrame1 <= s.cardEndFrame
+              s.cardStartFrame > 0 &&
+              frame1 >= s.cardStartFrame &&
+              frame1 <= s.cardEndFrame
             ) {
               cardIdx = i;
               break;
@@ -266,11 +300,11 @@ export function ScrollSequence({ heroOverlay }: Props) {
 
           // Produktų scena (butelis + šluostės)
           if (
-            currentFrame1 >= PRODUCTS_START_FRAME &&
-            currentFrame1 <= PRODUCTS_END_FRAME
+            frame1 >= PRODUCTS_START_FRAME &&
+            frame1 <= PRODUCTS_END_FRAME
           ) {
             const range = PRODUCTS_END_FRAME - PRODUCTS_START_FRAME;
-            const raw = (currentFrame1 - PRODUCTS_START_FRAME) / range;
+            const raw = (frame1 - PRODUCTS_START_FRAME) / range;
             // Greita įėjimo animacija per pirmus ~15% scenos
             setProductsP(Math.min(1, raw / 0.15));
           } else {
