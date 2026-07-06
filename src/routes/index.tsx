@@ -58,7 +58,7 @@ function Home() {
       {/* Smooth teleport fade overlay */}
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-0 z-[60] bg-[#f6ecd9] transition-opacity duration-200"
+        className="pointer-events-none fixed inset-0 z-[60] liquid-glass transition-opacity duration-200"
         style={{ opacity: fade }}
       />
       {/* Floating glass nav */}
