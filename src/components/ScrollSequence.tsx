@@ -310,12 +310,12 @@ export function ScrollSequence({ heroOverlay }: Props) {
       });
     };
 
-    // Skrolinimas keičia scenas TIK po vieną — nesvarbu kaip stipriai vartotojas
-    // paslenka, per vieną „scroll gesture" pereinama tik į kaimyninę sceną.
-    let lastStepTime = 0;
-    const STEP_COOLDOWN_MS = 1400;
-
-    const st = ScrollTrigger.create({
+    // Skrolinimas keičia scenas TIK po vieną. Naudojame ScrollTrigger snap su
+    // apribotu snapTo (±1 nuo dabartinės scenos), o currentSceneIdx atnaujiname
+    // TIK po to, kai snap animacija baigiasi — taip išvengiame „random" šokinėjimų
+    // ar grįžimo atgal per snap perėjimą.
+    let st: ScrollTrigger;
+    st = ScrollTrigger.create({
       trigger: section,
       start: "top top",
       end: () => `+=${window.innerHeight * TOTAL_SCROLL_VH}`,
@@ -323,43 +323,42 @@ export function ScrollSequence({ heroOverlay }: Props) {
       pin: true,
       anticipatePin: 1,
       snap: {
-        // Snap taškas ribojamas iki dabartinės scenos ±1 — negalima peršokti kelių scenų.
         snapTo: (value) => {
           const currentP = snapPoints[currentSceneIdx];
-          const dir = value > currentP ? 1 : value < currentP ? -1 : 0;
+          const diff = value - currentP;
+          // Slenkstis, kad mažas judesys negeneruotų perėjimo.
+          if (Math.abs(diff) < 0.015) return currentP;
+          const dir = diff > 0 ? 1 : -1;
           const nextIdx = Math.max(
             0,
             Math.min(snapPoints.length - 1, currentSceneIdx + dir),
           );
           return snapPoints[nextIdx];
         },
-        duration: { min: 0.2, max: 0.4 },
-        delay: 0,
+        duration: { min: 0.3, max: 0.5 },
+        delay: 0.08,
         ease: "power2.inOut",
-      },
-      onUpdate: (self) => {
-        const p = self.progress;
-        const currentP = snapPoints[currentSceneIdx];
-        const delta = p - currentP;
-        // Reikalaujame juntamo poslinkio nuo dabartinio snap taško + cooldown,
-        // kad greitas / ilgas skrolo judesys neperšoktų kelių scenų iš karto.
-        if (Math.abs(delta) > 0.03) {
-          const now = performance.now();
-          if (now - lastStepTime > STEP_COOLDOWN_MS) {
-            const dir = delta > 0 ? 1 : -1;
-            const target = Math.max(
-              0,
-              Math.min(snapPoints.length - 1, currentSceneIdx + dir),
-            );
-            if (target !== currentSceneIdx) {
-              lastStepTime = now;
-              currentSceneIdx = target;
-              goToScene(target);
+        onComplete: () => {
+          const p = st.progress;
+          let nearest = currentSceneIdx;
+          let minD = Infinity;
+          for (let i = 0; i < snapPoints.length; i++) {
+            const d = Math.abs(snapPoints[i] - p);
+            if (d < minD) {
+              minD = d;
+              nearest = i;
             }
           }
-        }
+          if (nearest !== currentSceneIdx) {
+            currentSceneIdx = nearest;
+            goToScene(nearest);
+          }
+        },
+      },
+      onUpdate: (self) => {
+        // Tik hero blur smooth perėjimui hero fazėje — scenų NEKEIČIAM čia.
         if (currentSceneIdx === 0) {
-          setHeroP(Math.min(1, p / HERO_FRACTION));
+          setHeroP(Math.min(1, self.progress / HERO_FRACTION));
         }
       },
     });
